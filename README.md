@@ -7,8 +7,8 @@ The code has to be well documented, so do not hesitate to give your feedbacks !
 ## Installation and use
 
 To compile the program, you need to type:
-`cd src`
-`make`
+```cd src
+make```
 You need a version of OCaml with `menhir` and `ocamllex`. 
 
 Once the installation has been made, you can use the minimal logic proof assistant:
