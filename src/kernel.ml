@@ -1,30 +1,9 @@
-(** This file is the kernel : the validity of all the Minlog proof assistant relies on the fact that this file has no bug. 
-All the other files depend on it. 
-It defines the minimal logic and the meaning of it rules through the functions which allow to verify that a rule was correctly applied.
-The main function is `verif_proof_term`. 
-Given a proof written in minimal logic, it will say that the proof is correct or if it contains an error *)
-
-
-(** Terms, context and sequents and goals
-
-- A term is either a variable which can represent any proposition (we call them propositional variables) or a formula composed 
-of an arbitrary number of implications between variables. 
-For instance, A could stand for the proposition "Socrates is human", B could stand for the proposition "Socrates is mortal".
-A -> B would be the proposition "If Socrates is human then Socrates is mortal"
-- A context is a list of propositions that we consider as true. The context is the list of our hypothesis. 
-It is often represented by the symbol Γ. 
-- A sequent is a pair between the context (our hypothesis), and a term which is the conclusion. 
-It is usually written A1, ..., Ak |- B
-- The goal is the list of sequent that we are trying to prove *)
-
-
-(** Terms : Var "A" stands for the propositional variable A. The constructor Arr is for building implications from already
-given terms 
-
-Examples : the formula (A->B)-> C would be represented as Arr (Arr (Var "A", Var "B"), Var "C").
-The formula A->(B->C) would be represented as Arr (Var "A", Arr (Var "B", Var "C")) *)
-
-type trm = Var of string | Arr of (trm*trm)
+type trm = Var of string 
+        | Arr of (trm*trm)
+        | And of (trm*trm)
+        | Or of (trm*trm) 
+        | Top 
+        | Bottom
 
 (** Contexts : on paper an arbitrary context is often represented by the variable Γ. 
 As it is a list of terms, in OCaml we will use the list notation [A1; ...; An] for the sequent A1, ..., An *)
@@ -38,71 +17,14 @@ type sequent = context*trm
 
 type goal = sequent list
 
-(** A rule is composed of its premises, its side conditions and its conclusion. 
-We use the notation Γ for any sequent and P for any term.
-The premises are a (possibly empty) list of sequents or side conditions: if they are true, then the conclusion is also true. 
-The conclusion is always a sequent.
-In minimal logic, we have only three rules. 
+(* Note: we use general and-elim rule *)
+type rule = Axiom | Abstraction | ModusPonens | AndIntro | AndElim | OrIntrol | OrIntror | OrElim | 
+            BottomElim | TopIntro | TopElim
 
-The axiom rule has no premises but one side condition to be true : P must belong to Γ,and the conclusion is of the form :  Γ |- P 
-Indeed, each time we have P among the list of our hypotheses Γ, we know that we can conclude P, we already hold it to be true.
-
-The abstraction rule has one premise : Γ, P |- Q and one conclusion Γ |- P -> Q 
-This rules says that whenever Q is true when all the terms in Γ and P are true, then, given all the proposition in Γ, 
-we know that P -> Q is true
-
-The modus ponens allows us to use the information contained in the implication.
-This rule has two premises : Γ |- P-> Q and Γ |- P and one conclusion Γ |- Q. 
-Whenever we have P-> Q and P, we can conclude Q (under the context Γ) 
-
-For now, we only give the name of the rules *)
-
-type rule = Axiom | Abstraction | ModusPonens
-
-(** Definition of the proof term : a tree labelized by a rule.
-
-- Empty should be used on the top of the proof tree, when we use a rule with no premise : here, there is only one such rule, the axiom rule.
-- Unary should be used when the rule has one premise : here, there is only one such rule, the abstraction rule.
-So, whenever we use the abstraction rule in a proof, we know that we will have to prove a new sequent.
-- Binary should be used when the rule has two premises : here, there is only one such rule, the modus ponens. 
-So, whenever we use the modus ponens rule, we will have to prove two remaining premises.
-
-However, it is possible to not respect these principle and to write wrong proof trees.
-They do not correspond to a valid proof in minimal logic, they are nonsense or at least they contain mistakes. 
-But they will be rejected by the function `verif_proof_term`.
-
-As an example of correct proof trees, let us represent how two proof trees would be written on paper and how it will be represented in our implementation. 
-On paper, the trivial proof of A |- A would be represented as :
-
-
-       A ∈ [A]
-       ________(axiom)
-        A |- A
-
-In our OCaml representation, the proof term is : Empty of (([Var "A"], Var "A"), Axiom).
-Indeed, as there is no sequent on top of the sequent A |- A, we use the Empty constructor of the type proof_term. 
-The current sequent is ([Var "A"], Var "A") and the side condition  A ∈ [A] will be checked later in the function `verif_axiom`
-
-
-Let us consider a more complex example : 
-On paper, the proof of (A->B)->C, B |- C is : 
-
-                                                B ∈ [(A->B)->C, B, A] 
-                                                _____________________   (axiom)
-       (A->B)->C ∈ [(A->B)->C, B]               (A->B)->C, B, A |- B
-    ______________________________(axiom)       ______________________ (abstraction)      
-    (A->B)->C, B |- (A-> B) -> C                (A->B)->C, B |- (A->B)
-                ____________________________________________________(modus ponens)
-                              (A->B)->C, B |- C
-                 
-                 
-In OCaml, the proof term is quite long. We would use the notation P =  Arr (Arr (Var "A", Var "B"), Var "C") to 
-shorten our proof term.
-
-Binary (([P, Var "B"], Var "C"), ModusPonens, Empty (([P; Var "B"], P), Axiom), Unary (([P; Var "B"]), Arr (Var "A", Var "B")), Abstraction, Empty (([P; Var "B"; Var "A"], Var "A"), Axiom)))
-*)
-
-type proof_term = Empty of (sequent*rule) | Unary of (sequent*rule*proof_term) | Binary of (sequent*rule*proof_term*proof_term)
+type proof_term = 
+    | Empty of (sequent*rule) 
+    | Unary of (sequent*rule*proof_term) 
+    | Binary of (sequent*rule*proof_term*proof_term)
 
 (** We need to check when two terms are equal, so there is a function to implement this equality between terms *)
 
@@ -110,29 +32,58 @@ let rec eq_term t1 t2 =
 match t1, t2 with
 | Var v1, Var v2 -> String.equal v1 v2
 | Arr (t1, t1'), Arr (t2, t2') -> eq_term t1 t2 && eq_term t1' t2'
+| And (t1, t1'), Arr (t2, t2') -> eq_term t1 t2 && eq_term t1' t2'
+| Or (t1, t1'), Or (t2, t2') -> eq_term t1 t2 && eq_term t1' t2'
+| Top, Top -> true
+| Bottom, Bottom -> true
 | _, _ -> false
-
-(** Here, we check if a term contains an arrow *)
 
 let is_arrow = function
 | Arr _ -> true
 | _ -> false
 
+let is_and = function
+| And _ -> true
+| _ -> false
+
+let is_or = function 
+| Or _ -> true
+| _ -> false
+
+let is_top = function
+| Top -> true
+| _ -> false
+
+let is_bottom = function
+| Bottom -> true
+| _ -> false 
+
 (** Here, we return a pair between the left of the arrow and its right. 
-If the term is not an arrow but a variable, the functions return an error *)
+If the term is not an arrow, it returns an error. 
+There are similar functions for others logical connectives. *)
 
 let split_arrow = function
 | Arr (t1, t2) -> (t1, t2)
 | _ -> failwith "not an arrow"
 
+let split_and = function
+| And (t1, t2) -> (t1, t2)
+| _ -> failwith "not a conjunction"
+
+let split_or = function
+| Or (t1, t2) -> (t1, t2)
+| _ -> failwith "not a disjunction"
+
 (* Checks if a term belongs to a list of term. 
-Remember: it is useful because in the axiom rule we have a side condition, which is precisely that the conclusion must belong to the premises *)
+Remember: it is useful because in the axiom rule we have a side condition, 
+which is precisely that the conclusion must belong to the premises *)
 
 let rec mem t = function
 | [] -> false
 | x :: xs -> eq_term t x || mem t xs
 
-(** This function removes a term t from a context, and return the context without the first occurence of this term t *)
+(** This function removes a term t from a context, 
+    and return the context without the first occurence of this term t *)
 
 let rec remove_exn a c = 
 if mem a c then 
@@ -159,16 +110,16 @@ let verif_axiom t l = if mem t l then () else failwith
 (** This function checks the correction of an application of the abstraction rule *)
 
 let verif_abstraction seq1 seq2 =
-let (c1, t1) = seq1 in
-let (c2, t2) = seq2 in
-if is_arrow t1 then 
-    let (a, b) = split_arrow t1 in
-    if eq_term t2 b then 
-        let c2' = remove_exn a c2 in
-        if eq_ctx c1 c2' then ()
-            else failwith "the upper context does not match to the lower context"
-        else failwith "the conclusion of the sequent does not correspond to the right of the arrow"
-    else failwith "the abstraction rule was applied on a term which does not contain an arrow"
+    let (c1, t1) = seq1 in
+    let (c2, t2) = seq2 in
+    if is_arrow t1 then 
+        let (a, b) = split_arrow t1 in
+        if eq_term t2 b then 
+            let c2' = remove_exn a c2 in
+            if eq_ctx c1 c2' then ()
+                else failwith "the upper context does not match to the lower context"
+            else failwith "the conclusion of the sequent does not correspond to the right of the arrow"
+        else failwith "the abstraction rule was applied on a term which does not contain an arrow"
 
 
 (** This function checks the correction of an application of the modus ponens rule *)
@@ -202,6 +153,22 @@ let verif_modus_ponens seq1 seq2 seq3 =
                 else failwith "the conclusion of the sequent does not match to the consequent of the implication"
         else failwith "cannot apply the modus ponens because no premises has an arrow as conclusion"
 
+(* Verification of AndIntro rule *)
+
+let verif_and_intro seq1 seq2 seq3 =
+    let (c1, t1) = seq1 in
+    let (c2, t2) = seq2 in
+    let (c3, t3) = seq3 in
+        let (a, b) = split_and t1 in 
+        if eq_ctx c1 c2 && eq_ctx c2 c3 then 
+            if (eq_term a t1 && eq_term b t2) || (eq_term a t2 && eq_term a t1) then () 
+            else failwith "the and intro-rule was applied with wrong conjuncts"
+        else failwith "failure while applying the introduction of and: the contexts are different"
+
+(* Verification of AndElim rule *)
+        
+
+
 (** This functions returns the sequent that we are trying to prove *)
 
 let current_sequent p =
@@ -210,7 +177,8 @@ let current_sequent p =
     | Unary (s, _, _) -> s
     | Binary (s, _, _, _) -> s
 
-(** This is the main function of the kernel : given any proof term, it checks each application of the rules, each premise and each conclusion: all of them must be correct application of the given rule. 
+(** This is the main function of the kernel : given any proof term, 
+it checks each application of the rules, each premise and each conclusion: all of them must be correct application of the given rule. 
 If it is the case, it prints "Qed" because the proof is correct, otherwise it returns an error *)
 
 let rec verif_proof_term p =
