@@ -12,7 +12,7 @@ type term =
         | TLeibniz of ty*term*term*term (* the type in which t = u, the term t, the term u, the elimination predicate P *)
         | TBottomElim of term
         | TForallIntro of term
-        | TForallElim of term 
+        | TForallElim of ty*term*term
         | TLeIntro1 of term (* n <= n *)
         | TLeIntro2 of term*term*term (* forall n m, n <= m -> n <= S m *)
         | TLeElim of term*term*term (* TLeElim P n m : implements the rule
@@ -29,7 +29,7 @@ and ty =
         | TyForall of string*ty*ty
         | TyVar of string
 
-type context = (term*ty) list
+type context = (string*ty) list
 
 type sequent = context*term
 
@@ -75,7 +75,7 @@ let rec is_free_in_trm_aux s t b =
     | TLeibniz (ty, t1, t2, t3) -> is_free_in_trm_aux s t1 b || is_free_in_trm_aux s t2 b || is_free_in_trm_aux s t3 b
     | TBottomElim t' -> is_free_in_trm_aux s t' b
     | TForallIntro t' -> is_free_in_trm_aux s t' b
-    | TForallElim t' -> is_free_in_trm_aux s t' b 
+    | TForallElim (ty, t1, t2) -> is_free_in_trm_aux s t1 b || is_free_in_trm_aux s t2 b
     | TLeIntro1 t' -> is_free_in_trm_aux s t' b
     | TLeIntro2 (t1, t2, t3) -> is_free_in_trm_aux s t1 b || is_free_in_trm_aux s t2 b || is_free_in_trm_aux s t3 b
     | TLeElim (t1, t2, t3) -> is_free_in_trm_aux s t1 b || is_free_in_trm_aux s t2 b || is_free_in_trm_aux s t3 b
