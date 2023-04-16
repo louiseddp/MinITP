@@ -11,6 +11,16 @@
       [ "ModusPonens",   MODUSPONENS;
         "Axiom",   AXIOM;
         "Abstraction",   ABSTRACTION;
+        "AndIntro", ANDINTRO;
+        "AndElim", ANDELIM;
+        "OrIntrol", ORINTROL;
+        "OrIntror", ORINTROR;
+        "OrElim", ORELIM;
+        "BottomElim", BOTTOMELIM;
+        "TopIntro", TOPINTRO;
+        "TopElim", TOPELIM;
+        "T", TOP;
+        "F", BOTTOM;
       ] ;
     fun s ->
       try  Hashtbl.find h s
@@ -29,6 +39,10 @@ rule token = parse
     { token lexbuf }
 | "->"
     { ARROW }
+| "/\\"
+    { AND }
+| "\\//"
+    { OR }
 | "|-"
     { TURNSTILE }
 | "("
