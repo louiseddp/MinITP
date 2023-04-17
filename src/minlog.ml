@@ -80,7 +80,15 @@ let _ =
         You can :\n
         - Apply an axiom rule by writing 'Axiom'\n
         - Apply the modus ponens on a formula A by writing 'ModusPonens A'\n
-        - Apply the abstraction rule by writing 'Abstraction'\n" ;
+        - Apply the abstraction rule by writing 'Abstraction'\n
+        - Apply the and introduction rule by writing 'AndIntro'\n
+        - Apply the and elimination rule with the two conjuncts A and B by writing 'AndElim A B'\n
+        - Apply the or introduction left rule by writing 'OrIntrol'\n
+        - Apply the or introduction right rule by writing 'OrIntror'\n
+        - Apply the or elimination rule with the two disjuncts A and B by writing 'OrElim A B'\n
+        - Apply the bottom elimination rule by writing 'BottomElim'\n
+        - Apply the top introduction rule by writing 'TopIntro'\n
+        - Apply the top elimination rule by writing 'TopElim'\n" ;
         let s1 = read_line () in
         let l1 = (Lexing.from_string s1) in
         let r = Parser.infrule Lexer.token l1 in
