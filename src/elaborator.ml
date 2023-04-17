@@ -40,7 +40,7 @@ let rec replace_in_hpt h s r =
         | OrElim -> HTernary (s, r, Hole, Hole, Hole)
         | BottomElim -> HUnary (s, r, Hole)
         | TopIntro -> HEmpty (s, r)
-        | TopElim -> HEmpty (s, r)
+        | TopElim -> HUnary (s, r, Hole)
         end
     | HEmpty(s', r') -> HEmpty (s', r')
     | HUnary(s', r', h') -> HUnary(s', r', replace_in_hpt h' s r)
@@ -132,7 +132,26 @@ let apply_or_elim prf_st f hpt =
         let s3= (b::ctx, c) in
         prf_st := s1::s2::s3:: (tl !prf_st);
         hpt := replace_in_hpt !hpt s OrElim
-    | _ -> failwith "the formula eliminated is not a disjunction" 
+    | _ -> failwith "the formula eliminated is not a disjunction"
+
+let apply_top_intro prf_st hpt = 
+    let s = hd !prf_st in
+    prf_st := tl !prf_st ; 
+    hpt := replace_in_hpt !hpt s TopIntro
+
+let apply_top_elim prf_st hpt = 
+    let s = hd !prf_st in
+    let (ctx, a) = s in
+    let s1 = (Top::ctx, a) in
+    prf_st := s1 :: tl !prf_st ; 
+    hpt := replace_in_hpt !hpt s TopElim
+
+let apply_bottom_elim prf_st hpt =
+    let s = hd !prf_st in
+    let (ctx, a) = s in
+    let s1 = (ctx, Bottom) in
+    prf_st := s1 :: tl !prf_st ; 
+    hpt := replace_in_hpt !hpt s BottomElim
 
 (* The proof terms of the kernel are terms which do not contains hole *)
 
