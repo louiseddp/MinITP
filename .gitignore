@@ -8,7 +8,7 @@
 *.thm
 *.toc
 latexmkrc
-src/minlog
+src/proplog
 src/*.o
 src/*.cmx
 src/*.cmi
