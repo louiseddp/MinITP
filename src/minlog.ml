@@ -1,6 +1,6 @@
 open Kernel
 open Printer
-open Build_proof
+open Elaborator
 open Parser
 open Lexing
 open Lexer
@@ -85,9 +85,9 @@ let _ =
         let l1 = (Lexing.from_string s1) in
         let r = Parser.infrule Lexer.token l1 in
         let _ =  match r with
-            | (None, Axiom) -> Build_proof.apply_axiom proof_state proof_tree
-            | (None, Abstraction) -> Build_proof.apply_abstraction proof_state proof_tree
-            | (Some f, ModusPonens) -> Build_proof.apply_modus_ponens proof_state f proof_tree
+            | (None, Axiom) -> Elaborator.apply_axiom proof_state proof_tree
+            | (None, Abstraction) -> Elaborator.apply_abstraction proof_state proof_tree
+            | (Some f, ModusPonens) -> Elaborator.apply_modus_ponens proof_state f proof_tree
             | _ -> failwith "error while applying a rule" 
         in
         let len = List.length !proof_state in 
