@@ -97,12 +97,14 @@ let _ =
             | (None, Abstraction) -> Elaborator.apply_abstraction proof_state proof_tree
             | (Some f, ModusPonens) -> Elaborator.apply_modus_ponens proof_state f proof_tree
             | (None, AndIntro) -> Elaborator.apply_and_intro proof_state proof_tree
+            | (Some f, AndElim) -> Elaborator.apply_and_elim proof_state f proof_tree
             | _ -> failwith "error while applying a rule" 
         in
         let len = List.length !proof_state in 
         Printf.printf "\nThere are %d remaining goals.\n" len ;
         match !proof_state with
             | [] -> proof_finished := true; 
-            print_string "Proof finished. Call to the kernel !" ; let ptree = hpt_to_pt !proof_tree in verif_proof_term ptree; print_string ("\nQED.\n")
+            print_string "Proof finished. Call to the kernel !" ; 
+            let ptree = hpt_to_pt !proof_tree in verif_proof_term ptree; print_string ("\nQED.\n")
             | x :: xs -> goal_to_string (x :: xs)
         done

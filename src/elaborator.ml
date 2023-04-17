@@ -94,6 +94,18 @@ let apply_and_intro prf_st hpt =
     prf_st:= s1::s2:: (tl !prf_st) ; 
     hpt := replace_in_hpt !hpt s AndIntro
 
+let apply_and_elim prf_st f hpt =
+    match f with
+    | And (a, b) -> 
+        let s = hd !prf_st in
+        let (ctx, c) = s in
+        let s1 = (ctx, f) in
+        let s2= (a::b::ctx, c) in
+        prf_st := s1::s2:: (tl !prf_st);
+        hpt := replace_in_hpt !hpt s AndElim
+    | _ -> failwith "the formula eliminated is not a conjunction"
+
+
 (* The proof terms of the kernel are terms which do not contains hole *)
 
 let rec hpt_to_pt = function
