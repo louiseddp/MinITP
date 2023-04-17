@@ -14,7 +14,8 @@ make
 ```
 You need a version of OCaml with `menhir` and `ocamllex`. 
 
-Once the installation has been made, you can use the minimal logic proof assistant:
+Once the installation has been made, you can use the
+propositional intuitionistic logic proof assistant:
 `./proplog` 
 
 ## Authors
