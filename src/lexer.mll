@@ -41,7 +41,7 @@ rule token = parse
     { ARROW }
 | "/\\"
     { AND }
-| "\\//"
+| "\\/"
     { OR }
 | "|-"
     { TURNSTILE }

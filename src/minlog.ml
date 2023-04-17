@@ -98,6 +98,8 @@ let _ =
             | (Some f, ModusPonens) -> Elaborator.apply_modus_ponens proof_state f proof_tree
             | (None, AndIntro) -> Elaborator.apply_and_intro proof_state proof_tree
             | (Some f, AndElim) -> Elaborator.apply_and_elim proof_state f proof_tree
+            | (None, OrIntrol) -> Elaborator.apply_or_introl proof_state proof_tree
+            | (None, OrIntror) -> Elaborator.apply_or_intror proof_state proof_tree
             | _ -> failwith "error while applying a rule" 
         in
         let len = List.length !proof_state in 

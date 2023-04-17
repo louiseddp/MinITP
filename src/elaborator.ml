@@ -106,6 +106,21 @@ let apply_and_elim prf_st f hpt =
         hpt := replace_in_hpt !hpt s AndElim
     | _ -> failwith "the formula eliminated is not a conjunction"
 
+let apply_or_introl prf_st hpt =
+    let s = hd !prf_st in
+    let (ctx, c) = s in
+    let (a, b) = split_or c in
+    let s1 = (ctx, a) in
+    prf_st := s1 :: (tl !prf_st);
+    hpt := replace_in_hpt !hpt s OrIntrol
+
+let apply_or_intror prf_st hpt =
+    let s = hd !prf_st in
+    let (ctx, c) = s in
+    let (a, b) = split_or c in
+    let s1 = (ctx, b) in
+    prf_st := s1 :: (tl !prf_st);
+    hpt := replace_in_hpt !hpt s OrIntror
 
 (* The proof terms of the kernel are terms which do not contains hole *)
 
