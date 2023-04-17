@@ -1,4 +1,5 @@
 open Kernel
+open Printer
 
 (* Proof terms with holes (= unfinished proofs) *)
 

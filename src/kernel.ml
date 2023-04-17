@@ -33,7 +33,7 @@ let rec eq_term t1 t2 =
 match t1, t2 with
 | Var v1, Var v2 -> String.equal v1 v2
 | Arr (t1, t1'), Arr (t2, t2') -> eq_term t1 t2 && eq_term t1' t2'
-| And (t1, t1'), Arr (t2, t2') -> eq_term t1 t2 && eq_term t1' t2'
+| And (t1, t1'), And (t2, t2') -> eq_term t1 t2 && eq_term t1' t2'
 | Or (t1, t1'), Or (t2, t2') -> eq_term t1 t2 && eq_term t1' t2'
 | Top, Top -> true
 | Bottom, Bottom -> true
