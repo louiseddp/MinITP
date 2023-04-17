@@ -1,24 +1,13 @@
 open Kernel
-<<<<<<< HEAD
-=======
 open Printer
 
 (* Proof terms with holes (= unfinished proofs) *)
->>>>>>> PropLog
 
 type h_proof_term = 
 | Hole 
 | HEmpty of (sequent*rule)
 | HUnary of (sequent*rule*h_proof_term)
 | HBinary of (sequent*rule*h_proof_term*h_proof_term)
-<<<<<<< HEAD
-
-(* Functions to build proof terms: elaborator of the proof assistant *
-The impure functions change the proof state by closing a goal (apply_axiom),
-changing the first goal (apply_abstraction), generating two subgoals (apply_modus_ponens) 
-They also update the reference to the proof tree with holes: the rightmost hole in the proof 
-term is replaced by the rule and its label, with new holes (except for the axiom rule) *)
-=======
 | HTernary of (sequent*rule*h_proof_term*h_proof_term*h_proof_term)
 
 (* Functions to build proof terms: elaborator of the proof assistant *
@@ -28,17 +17,13 @@ generating two subgoals (apply_modus_ponens, apply_and_elim), or three (apply_or
 They also update the reference to the proof tree with holes: the rightmost hole in the proof 
 term is replaced by the rule and its label, with new holes (except for the 
 rules which are suppose to terminate a proof) *)
->>>>>>> PropLog
 
 let rec contains_hole = function
     | Hole -> true
     | HEmpty (_, _) -> false
     | HUnary (_, _, h') -> contains_hole h'
     | HBinary (_, _, h1, h2) -> contains_hole h1 || contains_hole h2 
-<<<<<<< HEAD
-=======
     | HTernary (_, _, h1, h2, h3) -> contains_hole h1 || contains_hole h2 || contains_hole h3
->>>>>>> PropLog
 
 (* This function replace the rightmost hole by a new h_proof_term *)
 
@@ -48,12 +33,6 @@ let rec replace_in_hpt h s r =
         | Axiom -> HEmpty (s, r)
         | Abstraction -> HUnary (s, r, Hole)
         | ModusPonens -> HBinary (s, r, Hole, Hole)
-<<<<<<< HEAD
-        end
-    | HEmpty(s', r') -> HEmpty (s', r')
-    | HUnary(s', r', h') -> HUnary(s', r', replace_in_hpt h' s r)
-    | HBinary(s', r', h1, h2) -> if contains_hole h2 then HBinary (s', r', h1, replace_in_hpt h2 s r) else HBinary (s', r', replace_in_hpt h1 s r, h2)
-=======
         | AndIntro -> HBinary (s, r, Hole, Hole)
         | AndElim -> HBinary (s, r, Hole, Hole)
         | OrIntrol -> HUnary (s, r, Hole)
@@ -75,7 +54,6 @@ let rec replace_in_hpt h s r =
         else if contains_hole h2 then
             HTernary (s', r', h1, replace_in_hpt h2 s r, h3) 
         else HTernary (s', r', replace_in_hpt h1 s r, h2, h3)
->>>>>>> PropLog
 
 let tl = function
     | [] -> []
@@ -85,11 +63,8 @@ let hd = function
     | [] -> failwith "attempt to compute the head of an empty list"
     | x :: xs -> x
 
-<<<<<<< HEAD
-=======
 (* Basic tactics : apply the rules of the intuitionnistic logic *)
 
->>>>>>> PropLog
 let apply_axiom prf_st hpt =
     let s = hd !prf_st in
     prf_st := tl !prf_st ; 
@@ -111,8 +86,6 @@ let apply_modus_ponens prf_st a hpt =
     prf_st := s1 :: s2 :: (tl !prf_st) ; 
     hpt := replace_in_hpt !hpt s ModusPonens
 
-<<<<<<< HEAD
-=======
 let apply_and_intro prf_st hpt =
     let s = hd !prf_st in
     let (ctx, t) = s in
@@ -182,14 +155,9 @@ let apply_bottom_elim prf_st hpt =
 
 (* The proof terms of the kernel are terms which do not contains hole *)
 
->>>>>>> PropLog
 let rec hpt_to_pt = function
     | Hole -> failwith "proof not finished"
     | HEmpty (s, r) -> Empty (s, r)
     | HUnary (s, r, h) -> Unary (s, r, hpt_to_pt h)
-<<<<<<< HEAD
-    | HBinary (s, r, h1, h2) -> Binary (s, r, hpt_to_pt h1, hpt_to_pt h2)
-=======
     | HBinary (s, r, h1, h2) -> Binary (s, r, hpt_to_pt h1, hpt_to_pt h2)
     | HTernary (s, r, h1, h2, h3) -> Ternary (s, r, hpt_to_pt h1, hpt_to_pt h2, hpt_to_pt h3)
->>>>>>> PropLog
