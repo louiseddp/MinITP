@@ -96,6 +96,7 @@ let _ =
             | (None, Axiom) -> Elaborator.apply_axiom proof_state proof_tree
             | (None, Abstraction) -> Elaborator.apply_abstraction proof_state proof_tree
             | (Some f, ModusPonens) -> Elaborator.apply_modus_ponens proof_state f proof_tree
+            | (None, AndIntro) -> Elaborator.apply_and_intro proof_state proof_tree
             | _ -> failwith "error while applying a rule" 
         in
         let len = List.length !proof_state in 

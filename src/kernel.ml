@@ -163,7 +163,7 @@ let verif_and_intro seq1 seq2 seq3 =
     let (c3, t3) = seq3 in
         let (a, b) = split_and t1 in 
         if eq_ctx c1 c2 && eq_ctx c2 c3 then 
-            if (eq_term a t1 && eq_term b t2) || (eq_term a t2 && eq_term a t1) then () 
+            if (eq_term a t2 && eq_term b t3) || (eq_term b t2 && eq_term a t3) then () 
             else failwith "the and intro-rule was applied with wrong conjuncts"
         else failwith "failure while applying the introduction of and: the contexts are different"
 

@@ -85,6 +85,15 @@ let apply_modus_ponens prf_st a hpt =
     prf_st := s1 :: s2 :: (tl !prf_st) ; 
     hpt := replace_in_hpt !hpt s ModusPonens
 
+let apply_and_intro prf_st hpt =
+    let s = hd !prf_st in
+    let (ctx, t) = s in
+    let (a, b) = split_and t in 
+    let s1=(ctx, a) in
+    let s2=(ctx, b) in
+    prf_st:= s1::s2:: (tl !prf_st) ; 
+    hpt := replace_in_hpt !hpt s AndIntro
+
 (* The proof terms of the kernel are terms which do not contains hole *)
 
 let rec hpt_to_pt = function
