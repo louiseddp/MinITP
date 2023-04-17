@@ -50,7 +50,7 @@ let rec replace_in_hpt h s r =
         else HBinary (s', r', replace_in_hpt h1 s r, h2)
     | HTernary (s', r', h1, h2, h3) -> 
         if contains_hole h3 then 
-            HTernary (s', r, h1, h2, replace_in_hpt h3 s r) 
+            HTernary (s', r', h1, h2, replace_in_hpt h3 s r) 
         else if contains_hole h2 then
             HTernary (s', r', h1, replace_in_hpt h2 s r, h3) 
         else HTernary (s', r', replace_in_hpt h1 s r, h2, h3)
@@ -121,6 +121,18 @@ let apply_or_intror prf_st hpt =
     let s1 = (ctx, b) in
     prf_st := s1 :: (tl !prf_st);
     hpt := replace_in_hpt !hpt s OrIntror
+
+let apply_or_elim prf_st f hpt =
+    match f with
+    | Or (a, b) -> 
+        let s = hd !prf_st in
+        let (ctx, c) = s in
+        let s1 = (ctx, f) in
+        let s2= (a::ctx, c) in
+        let s3= (b::ctx, c) in
+        prf_st := s1::s2::s3:: (tl !prf_st);
+        hpt := replace_in_hpt !hpt s OrElim
+    | _ -> failwith "the formula eliminated is not a disjunction" 
 
 (* The proof terms of the kernel are terms which do not contains hole *)
 

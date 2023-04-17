@@ -100,6 +100,7 @@ let _ =
             | (Some f, AndElim) -> Elaborator.apply_and_elim proof_state f proof_tree
             | (None, OrIntrol) -> Elaborator.apply_or_introl proof_state proof_tree
             | (None, OrIntror) -> Elaborator.apply_or_intror proof_state proof_tree
+            | (Some f, OrElim) -> Elaborator.apply_or_elim proof_state f proof_tree
             | _ -> failwith "error while applying a rule" 
         in
         let len = List.length !proof_state in 
