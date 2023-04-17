@@ -22,7 +22,6 @@ let rec trm_to_string = function
             Printf.sprintf "(%s) /\\ (%s)" (trm_to_string t1) (trm_to_string t2)
         | _ -> Printf.sprintf "%s /\\ (%s)" (trm_to_string t1) (trm_to_string t2)
         end
-    | _ -> Printf.sprintf "%s /\\ %s" (trm_to_string t1) (trm_to_string t2)
     | _ ->  begin match t1 with
         | Arr (_, _) | Or (_, _)->
             Printf.sprintf "(%s) /\\ %s" (trm_to_string t1) (trm_to_string t2)
