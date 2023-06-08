@@ -7,7 +7,7 @@
 
 %token ARROW OR AND
 %token <string> IDENT
-%token MODUSPONENS ABSTRACTION AXIOM ANDINTRO ANDELIM ORINTROL ORINTROR ORELIM BOTTOMELIM TOPINTRO TOPELIM
+%token MODUSPONENS ABSTRACTION AXIOM ANDINTRO ANDELIM ANDELIMLEFT ANDELIMRIGHT ORINTROL ORINTROR ORELIM BOTTOMELIM TOPINTRO TOPELIM
 %token TURNSTILE
 %token TOP BOTTOM
 %token LPAR RPAR
@@ -43,6 +43,8 @@ infrule:
 | ABSTRACTION EOF { (None, Abstraction) }
 | ANDINTRO EOF { (None, AndIntro) }
 | ANDELIM f1=formula f2=formula EOF { (Some (And (f1, f2)), AndElim) }
+| ANDELIMLEFT f=formula EOF { (Some f, AndElimLeft) }
+| ANDELIMRIGHT f=formula EOF { (Some f, AndElimRight) }
 | ORINTROL EOF { (None, OrIntrol) }
 | ORINTROR EOF { (None, OrIntror) }
 | ORELIM f1=formula f2=formula EOF { (Some (Or (f1, f2)), OrElim) }

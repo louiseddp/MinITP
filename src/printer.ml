@@ -59,7 +59,9 @@ let context_to_string l =
        l "")
 
 let sequent_to_string (l, x) =
-  Printf.sprintf "%s |- %s" (context_to_string l) (trm_to_string x)
+  Printf.sprintf "%s |- %s"
+    (match l with [] -> "" | _ -> context_to_string l)
+    (trm_to_string x)
 
 let rec goal_to_string = function
   | [] -> ()

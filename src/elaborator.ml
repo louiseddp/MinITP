@@ -37,6 +37,8 @@ let rec replace_in_hpt h s r =
       | ModusPonens -> HBinary (s, r, Hole, Hole)
       | AndIntro -> HBinary (s, r, Hole, Hole)
       | AndElim -> HBinary (s, r, Hole, Hole)
+      | AndElimLeft -> HUnary (s, r, Hole)
+      | AndElimRight -> HUnary (s, r, Hole)
       | OrIntrol -> HUnary (s, r, Hole)
       | OrIntror -> HUnary (s, r, Hole)
       | OrElim -> HTernary (s, r, Hole, Hole, Hole)
@@ -102,6 +104,22 @@ let apply_and_elim prf_st f hpt =
       prf_st := s1 :: s2 :: tl !prf_st;
       hpt := replace_in_hpt !hpt s AndElim
   | _ -> failwith "the formula eliminated is not a conjunction"
+
+(* TODO : Écrire une nouvelle versoin en combinant la tactique 'apply_and_elim' et 'axiom' *)
+
+let apply_and_elim_left prf_st f hpt =
+  let s = hd !prf_st in
+  let ctx, b = s in
+  let s' = (ctx, And (f, b)) in
+  prf_st := s' :: tl !prf_st;
+  hpt := replace_in_hpt !hpt s AndElimLeft
+
+let apply_and_elim_right prf_st f hpt =
+  let s = hd !prf_st in
+  let ctx, a = s in
+  let s' = (ctx, And (a, f)) in
+  prf_st := s' :: tl !prf_st;
+  hpt := replace_in_hpt !hpt s AndElimRight
 
 let apply_or_introl prf_st hpt =
   let s = hd !prf_st in

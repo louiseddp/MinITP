@@ -24,6 +24,8 @@ type rule =
   | ModusPonens
   | AndIntro
   | AndElim
+  | AndElimLeft
+  | AndElimRight
   | OrIntrol
   | OrIntror
   | OrElim
@@ -225,6 +227,18 @@ let verif_and_elim seq1 seq2 seq3 =
       "wrong contexts during the application of and-elim rule:\n\
       \        no context of the premise match the context of the conclusion"
 
+let verif_and_elim_left seq1 seq2 =
+  let c1, t1 = seq1 in
+  let c2, t2 = seq2 in
+  if eq_ctx c1 c2 then ()
+  else failwith "wrong contexts during the application of and-elim-left rule"
+
+let verif_and_elim_right seq1 seq2 =
+  let c1, t1 = seq1 in
+  let c2, t2 = seq2 in
+  if eq_ctx c1 c2 then ()
+  else failwith "wrong contexts during the application of and-elim-right rule"
+
 (* Verification of or intro_left and right rules *)
 
 let verif_or_introl seq1 seq2 =
@@ -367,6 +381,14 @@ let rec verif_proof_term p =
       | TopElim ->
           let s' = current_sequent p' in
           verif_top_elim s s';
+          verif_proof_term p'
+      | AndElimRight ->
+          let s' = current_sequent p' in
+          verif_and_elim_right s s';
+          verif_proof_term p'
+      | AndElimLeft ->
+          let s' = current_sequent p' in
+          verif_and_elim_left s s';
           verif_proof_term p'
       | _ ->
           failwith

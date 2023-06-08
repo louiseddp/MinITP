@@ -34,6 +34,8 @@ let _ =
       \        - Apply the and introduction rule by writing 'AndIntro'\n\n\
       \        - Apply the and elimination rule with the two conjuncts A and B \
        by writing 'AndElim A B'\n\n\
+      \          Or use the left or right rule by writing 'AndElimLeft A' or \
+       'AndElimRight B'\n\n\
       \        - Apply the or introduction left rule by writing 'OrIntrol'\n\n\
       \        - Apply the or introduction right rule by writing 'OrIntror'\n\n\
       \        - Apply the or elimination rule with the two disjuncts A and B \
@@ -52,6 +54,10 @@ let _ =
           Elaborator.apply_modus_ponens proof_state f proof_tree
       | None, AndIntro -> Elaborator.apply_and_intro proof_state proof_tree
       | Some f, AndElim -> Elaborator.apply_and_elim proof_state f proof_tree
+      | Some f, AndElimLeft ->
+          Elaborator.apply_and_elim_left proof_state f proof_tree
+      | Some f, AndElimRight ->
+          Elaborator.apply_and_elim_right proof_state f proof_tree
       | None, OrIntrol -> Elaborator.apply_or_introl proof_state proof_tree
       | None, OrIntror -> Elaborator.apply_or_intror proof_state proof_tree
       | Some f, OrElim -> Elaborator.apply_or_elim proof_state f proof_tree

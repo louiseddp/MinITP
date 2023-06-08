@@ -13,6 +13,8 @@
         "Abstraction",   ABSTRACTION;
         "AndIntro", ANDINTRO;
         "AndElim", ANDELIM;
+        "AndElimLeft", ANDELIMLEFT;
+        "AndElimRight", ANDELIMRIGHT;
         "OrIntrol", ORINTROL;
         "OrIntror", ORINTROR;
         "OrElim", ORELIM;
