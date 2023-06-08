@@ -18,7 +18,7 @@
 %left AND
 
 %start seq
-%start infrule 
+%start infrule
 %type <(Kernel.trm option)*(Kernel.rule)> infrule
 %type <Kernel.sequent> seq
 

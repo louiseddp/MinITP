@@ -30,12 +30,12 @@
 let alpha = ['a'-'z' 'A'-'Z']
 let ident = alpha+
 
-rule token = parse 
-| ident as id 
+rule token = parse
+| ident as id
     { keyword_or_ident id }
 | [' ' '\t' '\r']+
     { token lexbuf }
-| "," 
+| ","
     { token lexbuf }
 | "->"
     { ARROW }
