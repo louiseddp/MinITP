@@ -1,14 +1,14 @@
 all:
 	ocamllex lexer.mll
 	ocamlopt -c kernel.ml
-	ocamlopt -c kernel.cmx printer.ml
-	ocamlopt -c kernel.cmx elaborator.ml
+	ocamlopt -c printer.ml
+	ocamlopt -c elaborator.ml
 	menhir -v --infer parser.mly
-	ocamlopt -c parser.mli parser.ml
-	ocamlopt -c parser.mli parser.cmx parser.ml lexer.ml 
-	ocamlopt -c parser.mli parser.ml lexer.cmx lexer.ml proplog.ml
-	ocamlopt -c kernel.cmx printer.ml elaborator.ml proplog.ml
-	ocamlopt -o proplog lexer.cmx parser.cmx kernel.cmx printer.cmx elaborator.cmx proplog.ml
+	ocamlopt -c parser.mli
+	ocamlopt -c parser.ml
+	ocamlopt -c lexer.ml
+	ocamlopt -c proplog.ml
+	ocamlopt -o proplog lexer.cmx parser.cmx kernel.cmx printer.cmx elaborator.cmx proplog.cmx
 
 clean:
-	rm *.o *.cmx *.cmi minlog *.automaton *.conflicts
+	rm -f *.o *.cmx *.cmi proplog *.automaton *.conflicts parser.ml lexer.ml parser.mli
