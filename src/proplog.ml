@@ -45,25 +45,27 @@ let _ =
       \        - Apply the top elimination rule by writing 'TopElim'\n";
     let s1 = read_line () in
     let l1 = Lexing.from_string s1 in
-    let r = Parser.infrule Lexer.token l1 in
+    let n, r = Parser.rule Lexer.token l1 in
     let _ =
       match r with
-      | None, Axiom -> Elaborator.apply_axiom proof_state proof_tree
-      | None, Abstraction -> Elaborator.apply_abstraction proof_state proof_tree
+      | None, Axiom -> Elaborator.apply_axiom proof_state proof_tree n
+      | None, Abstraction ->
+          Elaborator.apply_abstraction proof_state proof_tree n
       | Some f, ModusPonens ->
-          Elaborator.apply_modus_ponens proof_state f proof_tree
-      | None, AndIntro -> Elaborator.apply_and_intro proof_state proof_tree
-      | Some f, AndElim -> Elaborator.apply_and_elim proof_state f proof_tree
+          Elaborator.apply_modus_ponens proof_state f proof_tree n
+      | None, AndIntro -> Elaborator.apply_and_intro proof_state proof_tree n
+      | Some f, AndElim -> Elaborator.apply_and_elim proof_state f proof_tree n
       | Some f, AndElimLeft ->
-          Elaborator.apply_and_elim_left proof_state f proof_tree
+          Elaborator.apply_and_elim_left proof_state f proof_tree n
       | Some f, AndElimRight ->
-          Elaborator.apply_and_elim_right proof_state f proof_tree
-      | None, OrIntrol -> Elaborator.apply_or_introl proof_state proof_tree
-      | None, OrIntror -> Elaborator.apply_or_intror proof_state proof_tree
-      | Some f, OrElim -> Elaborator.apply_or_elim proof_state f proof_tree
-      | None, TopIntro -> Elaborator.apply_top_intro proof_state proof_tree
-      | None, TopElim -> Elaborator.apply_top_elim proof_state proof_tree
-      | None, BottomElim -> Elaborator.apply_bottom_elim proof_state proof_tree
+          Elaborator.apply_and_elim_right proof_state f proof_tree n
+      | None, OrIntrol -> Elaborator.apply_or_introl proof_state proof_tree n
+      | None, OrIntror -> Elaborator.apply_or_intror proof_state proof_tree n
+      | Some f, OrElim -> Elaborator.apply_or_elim proof_state f proof_tree n
+      | None, TopIntro -> Elaborator.apply_top_intro proof_state proof_tree n
+      | None, TopElim -> Elaborator.apply_top_elim proof_state proof_tree n
+      | None, BottomElim ->
+          Elaborator.apply_bottom_elim proof_state proof_tree n
       | _ -> failwith "error while applying a rule"
     in
     let len = List.length !proof_state in

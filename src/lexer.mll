@@ -32,7 +32,12 @@
 let alpha = ['a'-'z' 'A'-'Z']
 let ident = alpha+
 
+let digit = ['0'-'9']
+let number = digit+
+
 rule token = parse
+| number as n
+    { INT (int_of_string n) }
 | ident as id
     { keyword_or_ident id }
 | [' ' '\t' '\r']+

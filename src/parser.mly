@@ -7,6 +7,7 @@
 
 %token ARROW OR AND
 %token <string> IDENT
+%token <int> INT
 %token MODUSPONENS ABSTRACTION AXIOM ANDINTRO ANDELIM ANDELIMLEFT ANDELIMRIGHT ORINTROL ORINTROR ORELIM BOTTOMELIM TOPINTRO TOPELIM
 %token TURNSTILE
 %token TOP BOTTOM
@@ -18,7 +19,8 @@
 %left AND
 
 %start seq
-%start infrule
+%start rule
+%type <(int * (Kernel.trm option * Kernel.rule))> rule
 %type <(Kernel.trm option)*(Kernel.rule)> infrule
 %type <Kernel.sequent> seq
 
@@ -36,6 +38,10 @@ formula:
 | f1=formula OR f2=formula { Or (f1, f2) }
 | f1=formula AND f2=formula { And (f1, f2) }
 ;
+
+rule:
+  | INT infrule { ($1, $2) }
+  | infrule { (0, $1) }
 
 infrule:
 | MODUSPONENS f=formula EOF { (Some f, ModusPonens) }

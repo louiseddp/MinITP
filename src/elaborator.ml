@@ -66,124 +66,125 @@ let hd = function
   | [] -> failwith "attempt to compute the head of an empty list"
   | x :: xs -> x
 
-let pop_nth n l =
-  let rec aux n l =
-    match l with
-    | [] -> failwith "index out of range"
-    | x :: xs ->
-        if n = 0 then (x, xs)
-        else
-          let y, ys = aux (n - 1) xs in
-          (y, x :: ys)
-  in
-  aux n l
+let rec nth n = function
+  | [] -> failwith "index out of range"
+  | x :: xs -> if n = 0 then x else nth (n - 1) xs
+
+let rec pop_nth n l =
+  match l with
+  | [] -> failwith "index out of range"
+  | x :: xs ->
+      if n = 0 then (x, xs)
+      else
+        let y, ys = pop_nth (n - 1) xs in
+        (y, x :: ys)
+
+let rec insert_nth n x l =
+  match l with
+  | [] -> [ x ]
+  | y :: ys -> if n = 0 then x :: l else y :: insert_nth (n - 1) x ys
 
 (* Basic tactics : apply the rules of the intuitionnistic logic *)
 
-let apply_axiom prf_st hpt =
-  let s = hd !prf_st in
-  prf_st := tl !prf_st;
-  hpt := replace_in_hpt !hpt s Axiom
-
-let apply_axiom' prf_st hpt n =
+let apply_axiom prf_st hpt n =
   let s, new_prf_st = pop_nth n !prf_st in
   prf_st := new_prf_st;
   hpt := replace_in_hpt' !hpt s Axiom n
 
-let apply_abstraction prf_st hpt =
-  let s = hd !prf_st in
+let apply_abstraction prf_st hpt n =
+  let s, new_prf_st = pop_nth n !prf_st in
   let ctx, t = s in
   let a, b = split_arrow t in
   let s' = (a :: ctx, b) in
-  prf_st := s' :: tl !prf_st;
-  hpt := replace_in_hpt !hpt s Abstraction
+  prf_st := insert_nth n s' new_prf_st;
+  hpt := replace_in_hpt' !hpt s Abstraction n
 
-let apply_modus_ponens prf_st a hpt =
-  let s = hd !prf_st in
+let apply_modus_ponens prf_st a hpt n =
+  let s, new_prf_st = pop_nth n !prf_st in
   let ctx, b = s in
   let s1 = (ctx, Arr (a, b)) in
   let s2 = (ctx, a) in
-  prf_st := s1 :: s2 :: tl !prf_st;
-  hpt := replace_in_hpt !hpt s ModusPonens
+  prf_st := insert_nth n s1 (insert_nth n s2 new_prf_st);
+  hpt := replace_in_hpt' !hpt s ModusPonens n
 
-let apply_and_intro prf_st hpt =
-  let s = hd !prf_st in
+let apply_and_intro prf_st hpt n =
+  let s, new_prf_st = pop_nth n !prf_st in
   let ctx, t = s in
   let a, b = split_and t in
   let s1 = (ctx, a) in
   let s2 = (ctx, b) in
-  prf_st := s1 :: s2 :: tl !prf_st;
-  hpt := replace_in_hpt !hpt s AndIntro
+  prf_st := insert_nth n s1 (insert_nth n s2 new_prf_st);
+  hpt := replace_in_hpt' !hpt s AndIntro n
 
-let apply_and_elim prf_st f hpt =
+let apply_and_elim prf_st f hpt n =
   match f with
   | And (a, b) ->
-      let s = hd !prf_st in
+      let s, new_prf_st = pop_nth n !prf_st in
       let ctx, c = s in
       let s1 = (ctx, f) in
       let s2 = (a :: b :: ctx, c) in
-      prf_st := s1 :: s2 :: tl !prf_st;
-      hpt := replace_in_hpt !hpt s AndElim
+      prf_st := insert_nth n s1 (insert_nth n s2 new_prf_st);
+      hpt := replace_in_hpt' !hpt s AndElim n
   | _ -> failwith "the formula eliminated is not a conjunction"
 
-let apply_and_elim_left prf_st f hpt =
-  let s = hd !prf_st in
+let apply_and_elim_left prf_st f hpt n =
+  let s = nth n !prf_st in
   let ctx, a = s in
-  apply_and_elim prf_st (And (f, a)) hpt;
-  apply_axiom' prf_st hpt 1
+  apply_and_elim prf_st (And (f, a)) hpt n;
+  apply_axiom prf_st hpt (n + 1)
 
-let apply_and_elim_right prf_st f hpt =
-  let s = hd !prf_st in
+let apply_and_elim_right prf_st f hpt n =
+  let s = nth n !prf_st in
   let ctx, a = s in
-  apply_and_elim prf_st (And (a, f)) hpt;
-  apply_axiom' prf_st hpt 1
+  apply_and_elim prf_st (And (a, f)) hpt n;
+  apply_axiom prf_st hpt (n + 1)
 
-let apply_or_introl prf_st hpt =
-  let s = hd !prf_st in
-  let ctx, c = s in
-  let a, b = split_or c in
-  let s1 = (ctx, a) in
-  prf_st := s1 :: tl !prf_st;
-  hpt := replace_in_hpt !hpt s OrIntrol
+let apply_or_introl prf_st hpt n =
+  let s, new_prf_st = pop_nth n !prf_st in
+  let ctx, t = s in
+  let a, b = split_or t in
+  let s' = (ctx, a) in
+  prf_st := insert_nth n s' new_prf_st;
+  hpt := replace_in_hpt' !hpt s OrIntrol n
 
-let apply_or_intror prf_st hpt =
-  let s = hd !prf_st in
-  let ctx, c = s in
-  let a, b = split_or c in
-  let s1 = (ctx, b) in
-  prf_st := s1 :: tl !prf_st;
-  hpt := replace_in_hpt !hpt s OrIntror
+let apply_or_intror prf_st hpt n =
+  let s, new_prf_st = pop_nth n !prf_st in
+  let ctx, t = s in
+  let a, b = split_or t in
+  let s' = (ctx, b) in
+  prf_st := insert_nth n s' new_prf_st;
+  hpt := replace_in_hpt' !hpt s OrIntror n
 
-let apply_or_elim prf_st f hpt =
+let apply_or_elim prf_st f hpt n =
   match f with
   | Or (a, b) ->
-      let s = hd !prf_st in
+      let s, new_prf_st = pop_nth n !prf_st in
       let ctx, c = s in
       let s1 = (ctx, f) in
       let s2 = (a :: ctx, c) in
       let s3 = (b :: ctx, c) in
-      prf_st := s1 :: s2 :: s3 :: tl !prf_st;
-      hpt := replace_in_hpt !hpt s OrElim
+      prf_st := insert_nth n s1 (insert_nth n s2 (insert_nth n s3 new_prf_st));
+      hpt := replace_in_hpt' !hpt s OrElim n
   | _ -> failwith "the formula eliminated is not a disjunction"
 
-let apply_top_intro prf_st hpt =
-  let s = hd !prf_st in
-  prf_st := tl !prf_st;
-  hpt := replace_in_hpt !hpt s TopIntro
+let apply_top_intro prf_st hpt n =
+  let s, new_prf_st = pop_nth n !prf_st in
+  prf_st := new_prf_st;
+  hpt := replace_in_hpt' !hpt s TopIntro n
 
-let apply_top_elim prf_st hpt =
-  let s = hd !prf_st in
+let apply_top_elim prf_st hpt n =
+  let s, new_prf_st = pop_nth n !prf_st in
   let ctx, a = s in
-  let s1 = (Top :: ctx, a) in
-  prf_st := s1 :: tl !prf_st;
-  hpt := replace_in_hpt !hpt s TopElim
+  let s' = (Top :: ctx, a) in
+  prf_st := insert_nth n s' new_prf_st;
+  hpt := replace_in_hpt' !hpt s TopElim n
 
-let apply_bottom_elim prf_st hpt =
-  let s = hd !prf_st in
+let apply_bottom_elim prf_st hpt n =
+  let s, new_prf_st = pop_nth n !prf_st in
   let ctx, a = s in
-  let s1 = (ctx, Bottom) in
-  prf_st := s1 :: tl !prf_st;
-  hpt := replace_in_hpt !hpt s BottomElim
+  let s' = (ctx, Bottom) in
+  prf_st := insert_nth n s' new_prf_st;
+  hpt := replace_in_hpt' !hpt s BottomElim n
 
 (* The proof terms of the kernel are terms which do not contains hole *)
 
