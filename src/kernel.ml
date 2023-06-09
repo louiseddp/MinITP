@@ -382,14 +382,6 @@ let rec verif_proof_term p =
           let s' = current_sequent p' in
           verif_top_elim s s';
           verif_proof_term p'
-      | AndElimRight ->
-          let s' = current_sequent p' in
-          verif_and_elim_right s s';
-          verif_proof_term p'
-      | AndElimLeft ->
-          let s' = current_sequent p' in
-          verif_and_elim_left s s';
-          verif_proof_term p'
       | _ ->
           failwith
             "the rule used is not unary but it is a label of an unary node in \

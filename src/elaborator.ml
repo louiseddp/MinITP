@@ -18,17 +18,19 @@ type h_proof_term =
    term is replaced by the rule and its label, with new holes (except for the
    rules which are suppose to terminate a proof) *)
 
-let rec contains_hole = function
-  | Hole -> true
-  | HEmpty (_, _) -> false
-  | HUnary (_, _, h') -> contains_hole h'
-  | HBinary (_, _, h1, h2) -> contains_hole h1 || contains_hole h2
+let rec count_holes = function
+  | Hole -> 1
+  | HEmpty (_, _) -> 0
+  | HUnary (_, _, h') -> count_holes h'
+  | HBinary (_, _, h1, h2) -> count_holes h1 + count_holes h2
   | HTernary (_, _, h1, h2, h3) ->
-      contains_hole h1 || contains_hole h2 || contains_hole h3
+      count_holes h1 + count_holes h2 + count_holes h3
 
 (* This function replace the rightmost hole by a new h_proof_term *)
 
-let rec replace_in_hpt h s r =
+let rec replace_in_hpt h s r = replace_in_hpt' h s r 0
+
+and replace_in_hpt' h s r n =
   match h with
   | Hole -> (
       match r with
@@ -37,24 +39,26 @@ let rec replace_in_hpt h s r =
       | ModusPonens -> HBinary (s, r, Hole, Hole)
       | AndIntro -> HBinary (s, r, Hole, Hole)
       | AndElim -> HBinary (s, r, Hole, Hole)
-      | AndElimLeft -> HUnary (s, r, Hole)
-      | AndElimRight -> HUnary (s, r, Hole)
       | OrIntrol -> HUnary (s, r, Hole)
       | OrIntror -> HUnary (s, r, Hole)
       | OrElim -> HTernary (s, r, Hole, Hole, Hole)
       | BottomElim -> HUnary (s, r, Hole)
       | TopIntro -> HEmpty (s, r)
-      | TopElim -> HUnary (s, r, Hole))
+      | TopElim -> HUnary (s, r, Hole)
+      | _ -> failwith "the rule could not replace a hole")
   | HEmpty (s', r') -> HEmpty (s', r')
-  | HUnary (s', r', h') -> HUnary (s', r', replace_in_hpt h' s r)
+  | HUnary (s', r', h') -> HUnary (s', r', replace_in_hpt' h' s r n)
   | HBinary (s', r', h1, h2) ->
-      if contains_hole h2 then HBinary (s', r', h1, replace_in_hpt h2 s r)
-      else HBinary (s', r', replace_in_hpt h1 s r, h2)
+      let nb_holes = count_holes h2 in
+      if n < nb_holes then HBinary (s', r', h1, replace_in_hpt' h2 s r n)
+      else HBinary (s', r', replace_in_hpt' h1 s r (n - nb_holes), h2)
   | HTernary (s', r', h1, h2, h3) ->
-      if contains_hole h3 then HTernary (s', r', h1, h2, replace_in_hpt h3 s r)
-      else if contains_hole h2 then
-        HTernary (s', r', h1, replace_in_hpt h2 s r, h3)
-      else HTernary (s', r', replace_in_hpt h1 s r, h2, h3)
+      let nb_holes = count_holes h3 in
+      let nb_holes' = count_holes h2 + nb_holes in
+      if n < nb_holes then HTernary (s', r', h1, h2, replace_in_hpt' h3 s r n)
+      else if n < nb_holes' then
+        HTernary (s', r', h1, replace_in_hpt' h2 s r (n - nb_holes), h3)
+      else HTernary (s', r', replace_in_hpt' h1 s r (n - nb_holes'), h2, h3)
 
 let tl = function [] -> [] | x :: xs -> xs
 
@@ -62,12 +66,29 @@ let hd = function
   | [] -> failwith "attempt to compute the head of an empty list"
   | x :: xs -> x
 
+let pop_nth n l =
+  let rec aux n l =
+    match l with
+    | [] -> failwith "index out of range"
+    | x :: xs ->
+        if n = 0 then (x, xs)
+        else
+          let y, ys = aux (n - 1) xs in
+          (y, x :: ys)
+  in
+  aux n l
+
 (* Basic tactics : apply the rules of the intuitionnistic logic *)
 
 let apply_axiom prf_st hpt =
   let s = hd !prf_st in
   prf_st := tl !prf_st;
   hpt := replace_in_hpt !hpt s Axiom
+
+let apply_axiom' prf_st hpt n =
+  let s, new_prf_st = pop_nth n !prf_st in
+  prf_st := new_prf_st;
+  hpt := replace_in_hpt' !hpt s Axiom n
 
 let apply_abstraction prf_st hpt =
   let s = hd !prf_st in
@@ -105,21 +126,17 @@ let apply_and_elim prf_st f hpt =
       hpt := replace_in_hpt !hpt s AndElim
   | _ -> failwith "the formula eliminated is not a conjunction"
 
-(* TODO : Écrire une nouvelle versoin en combinant la tactique 'apply_and_elim' et 'axiom' *)
-
 let apply_and_elim_left prf_st f hpt =
   let s = hd !prf_st in
-  let ctx, b = s in
-  let s' = (ctx, And (f, b)) in
-  prf_st := s' :: tl !prf_st;
-  hpt := replace_in_hpt !hpt s AndElimLeft
+  let ctx, a = s in
+  apply_and_elim prf_st (And (f, a)) hpt;
+  apply_axiom' prf_st hpt 1
 
 let apply_and_elim_right prf_st f hpt =
   let s = hd !prf_st in
   let ctx, a = s in
-  let s' = (ctx, And (a, f)) in
-  prf_st := s' :: tl !prf_st;
-  hpt := replace_in_hpt !hpt s AndElimRight
+  apply_and_elim prf_st (And (a, f)) hpt;
+  apply_axiom' prf_st hpt 1
 
 let apply_or_introl prf_st hpt =
   let s = hd !prf_st in
