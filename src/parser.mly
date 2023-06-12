@@ -40,7 +40,7 @@ formula:
 ;
 
 rule:
-  | INT infrule { ($1, $2) }
+  | INT infrule { ($1-1, $2) }
   | infrule { (0, $1) }
 
 infrule:
