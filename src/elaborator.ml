@@ -85,19 +85,30 @@ let rec insert_nth n x l =
   | y :: ys -> if n = 0 then x :: l else y :: insert_nth (n - 1) x ys
 
 (* Basic tactics : apply the rules of the intuitionnistic logic *)
+let print_error s =
+  print_string "Error: ";
+  print_string s;
+  print_newline ();
+  print_string "The goals are left unchanged."
 
 let apply_axiom prf_st hpt n =
   let s, new_prf_st = pop_nth n !prf_st in
-  prf_st := new_prf_st;
-  hpt := replace_in_hpt' !hpt s Axiom n
+  let l, a = s in
+  try
+    Kernel.verif_axiom a l;
+    prf_st := insert_nth n s new_prf_st;
+    hpt := replace_in_hpt' !hpt s Axiom n
+  with _ -> print_error "the formula is not in the context"
 
 let apply_abstraction prf_st hpt n =
   let s, new_prf_st = pop_nth n !prf_st in
   let ctx, t = s in
-  let a, b = split_arrow t in
-  let s' = (a :: ctx, b) in
-  prf_st := insert_nth n s' new_prf_st;
-  hpt := replace_in_hpt' !hpt s Abstraction n
+  try
+    let a, b = split_arrow t in
+    let s' = (a :: ctx, b) in
+    prf_st := insert_nth n s' new_prf_st;
+    hpt := replace_in_hpt' !hpt s Abstraction n
+  with _ -> print_error "the formula is not an arrow"
 
 let apply_modus_ponens prf_st a hpt n =
   let s, new_prf_st = pop_nth n !prf_st in
@@ -110,11 +121,13 @@ let apply_modus_ponens prf_st a hpt n =
 let apply_and_intro prf_st hpt n =
   let s, new_prf_st = pop_nth n !prf_st in
   let ctx, t = s in
-  let a, b = split_and t in
-  let s1 = (ctx, a) in
-  let s2 = (ctx, b) in
-  prf_st := insert_nth n s1 (insert_nth n s2 new_prf_st);
-  hpt := replace_in_hpt' !hpt s AndIntro n
+  try
+    let a, b = split_and t in
+    let s1 = (ctx, a) in
+    let s2 = (ctx, b) in
+    prf_st := insert_nth n s1 (insert_nth n s2 new_prf_st);
+    hpt := replace_in_hpt' !hpt s AndIntro n
+  with _ -> print_error "the formula is not a conjunction"
 
 let apply_and_elim prf_st f hpt n =
   match f with
@@ -125,7 +138,7 @@ let apply_and_elim prf_st f hpt n =
       let s2 = (a :: b :: ctx, c) in
       prf_st := insert_nth n s1 (insert_nth n s2 new_prf_st);
       hpt := replace_in_hpt' !hpt s AndElim n
-  | _ -> failwith "the formula eliminated is not a conjunction"
+  | _ -> print_error "the formula eliminated is not a conjunction"
 
 let apply_and_elim_left prf_st f hpt n =
   let s = nth n !prf_st in
@@ -142,18 +155,22 @@ let apply_and_elim_right prf_st f hpt n =
 let apply_or_introl prf_st hpt n =
   let s, new_prf_st = pop_nth n !prf_st in
   let ctx, t = s in
-  let a, b = split_or t in
-  let s' = (ctx, a) in
-  prf_st := insert_nth n s' new_prf_st;
-  hpt := replace_in_hpt' !hpt s OrIntrol n
+  try
+    let a, b = split_or t in
+    let s' = (ctx, a) in
+    prf_st := insert_nth n s' new_prf_st;
+    hpt := replace_in_hpt' !hpt s OrIntrol n
+  with _ -> print_error "the formula is not a disjunction"
 
 let apply_or_intror prf_st hpt n =
   let s, new_prf_st = pop_nth n !prf_st in
   let ctx, t = s in
-  let a, b = split_or t in
-  let s' = (ctx, b) in
-  prf_st := insert_nth n s' new_prf_st;
-  hpt := replace_in_hpt' !hpt s OrIntror n
+  try
+    let a, b = split_or t in
+    let s' = (ctx, b) in
+    prf_st := insert_nth n s' new_prf_st;
+    hpt := replace_in_hpt' !hpt s OrIntror n
+  with _ -> print_error "the formula is not a disjunction"
 
 let apply_or_elim prf_st f hpt n =
   match f with
@@ -165,7 +182,7 @@ let apply_or_elim prf_st f hpt n =
       let s3 = (b :: ctx, c) in
       prf_st := insert_nth n s1 (insert_nth n s2 (insert_nth n s3 new_prf_st));
       hpt := replace_in_hpt' !hpt s OrElim n
-  | _ -> failwith "the formula eliminated is not a disjunction"
+  | _ -> print_error "the formula eliminated is not a disjunction"
 
 let apply_top_intro prf_st hpt n =
   let s, new_prf_st = pop_nth n !prf_st in
