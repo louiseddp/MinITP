@@ -63,14 +63,11 @@ and apply_rule state tree n r =
   | None, BottomElim -> Elaborator.apply_bottom_elim state tree n
   | _ -> None
 
-let proof_state : goal ref = ref []
-let proof_tree = ref Hole
-let proof_finished = ref false
 let empty = function [] -> true | _ -> false
 
 let _ =
   display_intro ();
-  proof_state := [ get_goal () ];
+  let proof_state = ref [ get_goal () ] and proof_tree = ref Hole in
   while not @@ empty !proof_state do
     display_help ();
     let n, r = get_rule () in
