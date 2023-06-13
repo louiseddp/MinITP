@@ -48,6 +48,7 @@ and get_rule () =
 
 and apply_rule state tree n r =
   match r with
+  | None, Auto -> Elaborator.apply_auto state tree n
   | None, Axiom -> Elaborator.apply_axiom state tree n
   | None, Abstraction -> Elaborator.apply_abstraction state tree n
   | Some f, ModusPonens -> Elaborator.apply_modus_ponens state f tree n
@@ -61,7 +62,7 @@ and apply_rule state tree n r =
   | None, TopIntro -> Elaborator.apply_top_intro state tree n
   | None, TopElim -> Elaborator.apply_top_elim state tree n
   | None, BottomElim -> Elaborator.apply_bottom_elim state tree n
-  | _ -> None
+  | _ -> Left "Invalid rule."
 
 let empty = function [] -> true | _ -> false
 
@@ -72,8 +73,8 @@ let _ =
     display_help ();
     let n, r = get_rule () in
     (match apply_rule !proof_state !proof_tree n r with
-    | None -> print_string "Invalid rule.\n"
-    | Some (state, tree) ->
+    | Left err -> print_string err
+    | Right (state, tree) ->
         proof_state := state;
         proof_tree := tree);
     Printf.printf "\nThere are %d remaining goals.\n" (List.length !proof_state);

@@ -19,6 +19,7 @@ type goal = sequent list
 
 (* Note: we use general and-elim rule *)
 type rule =
+  | Auto
   | Axiom
   | Abstraction
   | ModusPonens

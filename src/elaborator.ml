@@ -1,5 +1,6 @@
 open Kernel
 open Printer
+open Either
 
 (* Proof terms with holes (= unfinished proofs) *)
 
@@ -95,10 +96,8 @@ let apply_axiom prf_st hpt n =
   try
     Kernel.verif_axiom a l;
     let prf_st = new_prf_st and hpt = replace_in_hpt hpt s Axiom n in
-    Some (prf_st, hpt)
-  with _ ->
-    print_error "the formula is not in the context";
-    None
+    Right (prf_st, hpt)
+  with _ -> Left "the formula is not in the context"
 
 let apply_abstraction prf_st hpt n =
   let s, new_prf_st = pop_nth n prf_st in
@@ -108,10 +107,8 @@ let apply_abstraction prf_st hpt n =
     let s' = (a :: ctx, b) in
     let prf_st = insert_nth n s' new_prf_st
     and hpt = replace_in_hpt hpt s Abstraction n in
-    Some (prf_st, hpt)
-  with _ ->
-    print_error "the formula is not an arrow";
-    None
+    Right (prf_st, hpt)
+  with _ -> Left "the formula is not an arrow"
 
 let apply_modus_ponens prf_st a hpt n =
   let s, new_prf_st = pop_nth n prf_st in
@@ -119,7 +116,7 @@ let apply_modus_ponens prf_st a hpt n =
   let s1 = (ctx, Arr (a, b)) and s2 = (ctx, a) in
   let prf_st = insert_nth n s1 (insert_nth n s2 new_prf_st)
   and hpt = replace_in_hpt hpt s ModusPonens n in
-  Some (prf_st, hpt)
+  Right (prf_st, hpt)
 
 let apply_and_intro prf_st hpt n =
   let s, new_prf_st = pop_nth n prf_st in
@@ -129,10 +126,8 @@ let apply_and_intro prf_st hpt n =
     let s1 = (ctx, a) and s2 = (ctx, b) in
     let prf_st = insert_nth n s1 (insert_nth n s2 new_prf_st)
     and hpt = replace_in_hpt hpt s AndIntro n in
-    Some (prf_st, hpt)
-  with _ ->
-    print_error "the formula is not a conjunction";
-    None
+    Right (prf_st, hpt)
+  with _ -> Left "the formula is not a conjunction"
 
 let apply_and_elim prf_st f hpt n =
   match f with
@@ -142,24 +137,22 @@ let apply_and_elim prf_st f hpt n =
       let s1 = (ctx, f) and s2 = (a :: b :: ctx, c) in
       let prf_st = insert_nth n s1 (insert_nth n s2 new_prf_st)
       and hpt = replace_in_hpt hpt s AndElim n in
-      Some (prf_st, hpt)
-  | _ ->
-      print_error "the formula eliminated is not a conjunction";
-      None
+      Right (prf_st, hpt)
+  | _ -> Left "the formula eliminated is not a conjunction"
 
 let apply_and_elim_left prf_st f hpt n =
   let s = nth n prf_st in
   let ctx, a = s in
   match apply_and_elim prf_st (And (f, a)) hpt n with
-  | None -> None
-  | Some (prf_st', hpt') -> apply_axiom prf_st' hpt' (n + 1)
+  | Left err -> Left err
+  | Right (prf_st', hpt') -> apply_axiom prf_st' hpt' (n + 1)
 
 let apply_and_elim_right prf_st f hpt n =
   let s = nth n prf_st in
   let ctx, a = s in
   match apply_and_elim prf_st (And (a, f)) hpt n with
-  | None -> None
-  | Some (prf_st', hpt') -> apply_axiom prf_st' hpt' (n + 1)
+  | Left err -> Left err
+  | Right (prf_st', hpt') -> apply_axiom prf_st' hpt' (n + 1)
 
 let apply_or_introl prf_st hpt n =
   let s, new_prf_st = pop_nth n prf_st in
@@ -169,10 +162,8 @@ let apply_or_introl prf_st hpt n =
     let s' = (ctx, a) in
     let prf_st = insert_nth n s' new_prf_st
     and hpt = replace_in_hpt hpt s OrIntrol n in
-    Some (prf_st, hpt)
-  with _ ->
-    print_error "the formula is not a disjunction";
-    None
+    Right (prf_st, hpt)
+  with _ -> Left "the formula is not a disjunction"
 
 let apply_or_intror prf_st hpt n =
   let s, new_prf_st = pop_nth n prf_st in
@@ -182,10 +173,8 @@ let apply_or_intror prf_st hpt n =
     let s' = (ctx, b) in
     let prf_st = insert_nth n s' new_prf_st
     and hpt = replace_in_hpt hpt s OrIntror n in
-    Some (prf_st, hpt)
-  with _ ->
-    print_error "the formula is not a disjunction";
-    None
+    Right (prf_st, hpt)
+  with _ -> Left "the formula is not a disjunction"
 
 let apply_or_elim prf_st f hpt n =
   match f with
@@ -198,15 +187,13 @@ let apply_or_elim prf_st f hpt n =
       let prf_st =
         insert_nth n s1 (insert_nth n s2 (insert_nth n s3 new_prf_st))
       and hpt = replace_in_hpt hpt s OrElim n in
-      Some (prf_st, hpt)
-  | _ ->
-      print_error "the formula eliminated is not a disjunction";
-      None
+      Right (prf_st, hpt)
+  | _ -> Left "the formula eliminated is not a disjunction"
 
 let apply_top_intro prf_st hpt n =
   let s, new_prf_st = pop_nth n prf_st in
   let prf_st = new_prf_st and hpt = replace_in_hpt hpt s TopIntro n in
-  Some (prf_st, hpt)
+  Right (prf_st, hpt)
 
 let apply_top_elim prf_st hpt n =
   let s, new_prf_st = pop_nth n prf_st in
@@ -214,7 +201,7 @@ let apply_top_elim prf_st hpt n =
   let s' = (Top :: ctx, a) in
   let prf_st = insert_nth n s' new_prf_st
   and hpt = replace_in_hpt hpt s TopElim n in
-  Some (prf_st, hpt)
+  Right (prf_st, hpt)
 
 let apply_bottom_elim prf_st hpt n =
   let s, new_prf_st = pop_nth n prf_st in
@@ -222,7 +209,7 @@ let apply_bottom_elim prf_st hpt n =
   let s' = (ctx, Bottom) in
   let prf_st = insert_nth n s' new_prf_st
   and hpt = replace_in_hpt hpt s BottomElim n in
-  Some (prf_st, hpt)
+  Right (prf_st, hpt)
 
 (* The proof terms of the kernel are terms which do not contains hole *)
 

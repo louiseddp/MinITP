@@ -8,7 +8,9 @@
   let keyword_or_ident =
     let h = Hashtbl.create 17 in
     List.iter (fun (s, k) -> Hashtbl.add h s k)
-      [ "ModusPonens",   MODUSPONENS;
+      [
+        "Auto", AUTO;
+        "ModusPonens",   MODUSPONENS;
         "Axiom",   AXIOM;
         "Abstraction",   ABSTRACTION;
         "AndIntro", ANDINTRO;
