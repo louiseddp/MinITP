@@ -62,7 +62,7 @@ and apply_rule state tree n r =
   | None, TopIntro -> Elaborator.apply_top_intro state tree n
   | None, TopElim -> Elaborator.apply_top_elim state tree n
   | None, BottomElim -> Elaborator.apply_bottom_elim state tree n
-  | _ -> Left (String "Invalid rule.")
+  | _ -> Left "Invalid rule."
 
 let empty = function [] -> true | _ -> false
 
@@ -73,10 +73,7 @@ let _ =
     display_help ();
     let n, r = get_rule () in
     (match apply_rule !proof_state !proof_tree n r with
-    | Left (String err) -> print_string err
-    | Left (Fallback (state, tree)) ->
-        proof_state := state;
-        proof_tree := tree
+    | Left err -> print_string err
     | Right (state, tree) ->
         proof_state := state;
         proof_tree := tree);

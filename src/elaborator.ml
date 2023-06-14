@@ -11,8 +11,6 @@ type h_proof_term =
   | HBinary of (sequent * rule * h_proof_term * h_proof_term)
   | HTernary of (sequent * rule * h_proof_term * h_proof_term * h_proof_term)
 
-type error = String of string | Fallback of goal * h_proof_term
-
 (* Functions to build proof terms: elaborator of the proof assistant *
    The impure functions change the proof state by closing a goal (apply_axiom, apply_top_intro),
    changing the first goal (apply_abstraction, apply_orintrol, apply_bottom_elim...),
@@ -100,7 +98,7 @@ let apply_axiom prf_st hpt n =
     Kernel.verif_axiom a l;
     let prf_st = new_prf_st and hpt = replace_in_hpt hpt s Axiom n in
     Right (prf_st, hpt)
-  with _ -> Left (String "the formula is not in the context")
+  with _ -> Left "the formula is not in the context"
 (* with _ -> Left (String "index out of range") *)
 
 let apply_abstraction prf_st hpt n =
@@ -112,7 +110,7 @@ let apply_abstraction prf_st hpt n =
     let prf_st = insert_nth n s' new_prf_st
     and hpt = replace_in_hpt hpt s Abstraction n in
     Right (prf_st, hpt)
-  with _ -> Left (String "the formula is not an arrow")
+  with _ -> Left "the formula is not an arrow"
 
 let apply_modus_ponens prf_st a hpt n =
   let s, new_prf_st = pop_nth n prf_st in
@@ -131,7 +129,7 @@ let apply_and_intro prf_st hpt n =
     let prf_st = insert_nth n s1 (insert_nth n s2 new_prf_st)
     and hpt = replace_in_hpt hpt s AndIntro n in
     Right (prf_st, hpt)
-  with _ -> Left (String "the formula is not a conjunction")
+  with _ -> Left "the formula is not a conjunction"
 
 let apply_and_elim prf_st f hpt n =
   match f with
@@ -142,7 +140,7 @@ let apply_and_elim prf_st f hpt n =
       let prf_st = insert_nth n s1 (insert_nth n s2 new_prf_st)
       and hpt = replace_in_hpt hpt s AndElim n in
       Right (prf_st, hpt)
-  | _ -> Left (String "the formula eliminated is not a conjunction")
+  | _ -> Left "the formula eliminated is not a conjunction"
 
 let apply_and_elim_left prf_st f hpt n =
   let s = nth n prf_st in
@@ -167,7 +165,7 @@ let apply_or_introl prf_st hpt n =
     let prf_st = insert_nth n s' new_prf_st
     and hpt = replace_in_hpt hpt s OrIntrol n in
     Right (prf_st, hpt)
-  with _ -> Left (String "the formula is not a disjunction")
+  with _ -> Left "the formula is not a disjunction"
 
 let apply_or_intror prf_st hpt n =
   let s, new_prf_st = pop_nth n prf_st in
@@ -178,7 +176,7 @@ let apply_or_intror prf_st hpt n =
     let prf_st = insert_nth n s' new_prf_st
     and hpt = replace_in_hpt hpt s OrIntror n in
     Right (prf_st, hpt)
-  with _ -> Left (String "the formula is not a disjunction")
+  with _ -> Left "the formula is not a disjunction"
 
 let apply_or_elim prf_st f hpt n =
   match f with
@@ -192,7 +190,7 @@ let apply_or_elim prf_st f hpt n =
         insert_nth n s1 (insert_nth n s2 (insert_nth n s3 new_prf_st))
       and hpt = replace_in_hpt hpt s OrElim n in
       Right (prf_st, hpt)
-  | _ -> Left (String "the formula eliminated is not a disjunction")
+  | _ -> Left "the formula eliminated is not a disjunction"
 
 let apply_top_intro prf_st hpt n =
   let s, new_prf_st = pop_nth n prf_st in
