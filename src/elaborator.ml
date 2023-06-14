@@ -93,6 +93,7 @@ let print_error s =
   print_string "The goals are left unchanged."
 
 let apply_axiom prf_st hpt n =
+  (* try *)
   let s, new_prf_st = pop_nth n prf_st in
   let l, a = s in
   try
@@ -100,6 +101,7 @@ let apply_axiom prf_st hpt n =
     let prf_st = new_prf_st and hpt = replace_in_hpt hpt s Axiom n in
     Right (prf_st, hpt)
   with _ -> Left (String "the formula is not in the context")
+(* with _ -> Left (String "index out of range") *)
 
 let apply_abstraction prf_st hpt n =
   let s, new_prf_st = pop_nth n prf_st in
@@ -214,9 +216,9 @@ let apply_bottom_elim prf_st hpt n =
   Right (prf_st, hpt)
 
 let try_apply tactic prf_st hpt n =
-  match tactic prf_st hpt n with
-  | Left _ -> Left (Fallback (prf_st, hpt))
-  | Right (prf_st', hpt') -> Right (prf_st', hpt')
+  if count_holes hpt > 0 then tactic prf_st hpt n
+  else Left "The proof is already complete"
+
 (* Takes a list of tactics and applies them *)
 
 let rec fold_apply tactics prf_st hpt n =
