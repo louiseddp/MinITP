@@ -304,8 +304,14 @@ let apply_commute args n prf_st hpt =
         "the formula is not a conjunction or a disjunction, could not apply \
          commute"
 
-let apply_assert args n prf_st hpt = failwith "not implemented"
-let apply_apply_in args n prf_st hpt = failwith "not implemented"
+let apply_assert args n prf_st hpt =
+  match args with
+  | [ Term a ] ->
+      fold_apply_once
+        [ apply_modus_ponens [ Term a ] n; apply_abstraction [] n ]
+        prf_st hpt
+  | _ -> Left "the assert tactic takes exactly one term argument"
+
 
 (* The proof terms of the kernel are terms which do not contains hole *)
 
