@@ -11,4 +11,4 @@ all:
 	ocamlopt -o proplog lexer.cmx parser.cmx kernel.cmx printer.cmx elaborator.cmx proplog.ml
 
 clean:
-	rm *.o *.cmx *.cmi minlog *.automaton *.conflicts
+	rm *.o *.cmx *.cmi proplog *.automaton *.conflicts
