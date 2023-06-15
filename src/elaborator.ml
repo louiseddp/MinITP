@@ -153,7 +153,7 @@ let apply_and_elim args n prf_st hpt =
       Right (prf_st, hpt)
   | _ -> Left "the and elimination takes exactly two term arguments"
 
-let apply_and_elim_left args n prf_st hpt =
+let apply_and_elim_right args n prf_st hpt =
   match args with
   | [ Term f ] -> (
       let s = nth n prf_st in
@@ -163,7 +163,7 @@ let apply_and_elim_left args n prf_st hpt =
       | Right (prf_st', hpt') -> apply_axiom [] (n + 1) prf_st' hpt')
   | _ -> Left "the and left elimination takes exactly one term argument"
 
-let apply_and_elim_right args n prf_st hpt =
+let apply_and_elim_left args n prf_st hpt =
   match args with
   | [ Term f ] -> (
       let s = nth n prf_st in
@@ -283,8 +283,8 @@ let apply_commute args n prf_st hpt =
       fold_apply_once
         [
           apply_and_intro [] n;
-          apply_and_elim_left [ Term b ] n;
-          apply_and_elim_right [ Term a ] (n + 1);
+          apply_and_elim_right [ Term b ] n;
+          apply_and_elim_left [ Term a ] (n + 1);
         ]
         prf_st hpt
   | Or (a, b) ->
