@@ -16,13 +16,13 @@ Example: the sequent A -> B, A |- B  would be written ([Arr (Var "A", Var "B"); 
 
 type sequent = context * trm
 type goal = sequent list
+type tactic_arg = Index of int | Term of trm
 
-(* Note: we use general and-elim rule *)
 type rule =
   | Auto
+  | ModusPonens
   | Axiom
   | Abstraction
-  | ModusPonens
   | AndIntro
   | AndElim
   | AndElimLeft
@@ -30,9 +30,12 @@ type rule =
   | OrIntrol
   | OrIntror
   | OrElim
-  | BottomElim
-  | TopIntro
   | TopElim
+  | TopIntro
+  | BottomElim
+  | Commute
+  | Assert
+  | ApplyIn
 
 type proof_term =
   | Empty of (sequent * rule)

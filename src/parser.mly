@@ -5,10 +5,10 @@
 
 %}
 
+// Formulae
 %token ARROW OR AND
 %token <string> IDENT
-%token <int> INT
-%token AUTO MODUSPONENS ABSTRACTION AXIOM ANDINTRO ANDELIM ANDELIMLEFT ANDELIMRIGHT ORINTROL ORINTROR ORELIM BOTTOMELIM TOPINTRO TOPELIM
+
 %token TURNSTILE
 %token TOP BOTTOM
 %token LPAR RPAR
@@ -18,44 +18,70 @@
 %left OR
 %left AND
 
+// Rules
+%token <int> INT
+%token AUTO
+%token MODUSPONENS
+%token AXIOM
+%token ABSTRACTION
+%token ANDINTRO
+%token ANDELIM
+%token ANDELIMLEFT
+%token ANDELIMRIGHT
+%token ORINTROL
+%token ORINTROR
+%token ORELIM
+%token BOTTOMELIM
+%token TOPINTRO
+%token TOPELIM
+%token COMMUTE
+%token ASSERT
+%token APPLY
+
+%token IN
+
 %start seq
 %start rule
-%type <(int * (Kernel.trm option * Kernel.rule))> rule
-%type <(Kernel.trm option)*(Kernel.rule)> infrule
+%type <(int * (Kernel.tactic_arg list  * Kernel.rule))> rule
+// %type <(Kernel.tactic_arg list)*(Kernel.rule)> infrule
 %type <Kernel.sequent> seq
 
 %%
 seq:
-| l=list(formula) TURNSTILE f=formula EOF { (l, f) }
+  | l=list(formula) TURNSTILE f=formula EOF { (l, f) }
 ;
 
 formula:
-| TOP { Top }
-| BOTTOM { Bottom }
-| id=IDENT { Var id }
-| LPAR f=formula RPAR { f }
-| f1=formula ARROW f2=formula { Arr (f1, f2) }
-| f1=formula OR f2=formula { Or (f1, f2) }
-| f1=formula AND f2=formula { And (f1, f2) }
+  | TOP                         { Top }
+  | BOTTOM                      { Bottom }
+  | id=IDENT                    { Var id }
+  | LPAR f=formula RPAR         { f }
+  | f1=formula ARROW f2=formula { Arr (f1, f2) }
+  | f1=formula OR f2=formula    { Or (f1, f2) }
+  | f1=formula AND f2=formula   { And (f1, f2) }
 ;
 
 rule:
   | INT infrule { ($1-1, $2) }
-  | infrule { (0, $1) }
+  | infrule     { (0, $1) }
+;
 
 infrule:
-| AUTO EOF { (None, Auto) }
-| MODUSPONENS f=formula EOF { (Some f, ModusPonens) }
-| AXIOM EOF { (None, Axiom) }
-| ABSTRACTION EOF { (None, Abstraction) }
-| ANDINTRO EOF { (None, AndIntro) }
-| ANDELIM f1=formula f2=formula EOF { (Some (And (f1, f2)), AndElim) }
-| ANDELIMLEFT f=formula EOF { (Some f, AndElimLeft) }
-| ANDELIMRIGHT f=formula EOF { (Some f, AndElimRight) }
-| ORINTROL EOF { (None, OrIntrol) }
-| ORINTROR EOF { (None, OrIntror) }
-| ORELIM f1=formula f2=formula EOF { (Some (Or (f1, f2)), OrElim) }
-| TOPELIM EOF { (None, TopElim) }
-| TOPINTRO EOF { (None, TopIntro) }
-| BOTTOMELIM EOF {(None, BottomElim) }
+  | AUTO EOF                          { ([], Auto) }
+  | MODUSPONENS f=formula EOF         { ([Term f], ModusPonens) }
+  | AXIOM EOF                         { ([], Axiom) }
+  | ABSTRACTION EOF                   { ([], Abstraction) }
+  | ANDINTRO EOF                      { ([], AndIntro) }
+  | ANDELIM f1=formula f2=formula EOF { ([Term f1; Term f2], AndElim) }
+  | ANDELIMLEFT f=formula EOF         { ([Term f], AndElimLeft) }
+  | ANDELIMRIGHT f=formula EOF        { ([Term f], AndElimRight) }
+  | ORINTROL EOF                      { ([], OrIntrol) }
+  | ORINTROR EOF                      { ([], OrIntror) }
+  | ORELIM f1=formula f2=formula EOF  { ([Term f1; Term f2], OrElim) }
+  | TOPELIM EOF                       { ([], TopElim) }
+  | TOPINTRO EOF                      { ([], TopIntro) }
+  | BOTTOMELIM EOF                    { ([], BottomElim) }
+  | COMMUTE EOF                       { ([], Commute) }
+  | ASSERT f=formula EOF              { ([Term f], Assert) }
+  | APPLY f=formula IN h=INT          { ([Term f; Index h], ApplyIn ) }
 ;

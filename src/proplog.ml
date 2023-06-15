@@ -46,23 +46,25 @@ and get_rule () =
   let l = Lexing.from_string s in
   Parser.rule Lexer.token l
 
-and apply_rule state tree n r =
-  match r with
-  | None, Auto -> Elaborator.apply_auto state tree n
-  | None, Axiom -> Elaborator.apply_axiom state tree n
-  | None, Abstraction -> Elaborator.apply_abstraction state tree n
-  | Some f, ModusPonens -> Elaborator.apply_modus_ponens state f tree n
-  | None, AndIntro -> Elaborator.apply_and_intro state tree n
-  | Some f, AndElim -> Elaborator.apply_and_elim state f tree n
-  | Some f, AndElimLeft -> Elaborator.apply_and_elim_left state f tree n
-  | Some f, AndElimRight -> Elaborator.apply_and_elim_right state f tree n
-  | None, OrIntrol -> Elaborator.apply_or_introl state tree n
-  | None, OrIntror -> Elaborator.apply_or_intror state tree n
-  | Some f, OrElim -> Elaborator.apply_or_elim state f tree n
-  | None, TopIntro -> Elaborator.apply_top_intro state tree n
-  | None, TopElim -> Elaborator.apply_top_elim state tree n
-  | None, BottomElim -> Elaborator.apply_bottom_elim state tree n
-  | _ -> Left "Invalid rule."
+and apply_rule rule args n state tree =
+  match rule with
+  | Auto -> Elaborator.apply_auto args n state tree
+  | Axiom -> Elaborator.apply_axiom args n state tree
+  | Abstraction -> Elaborator.apply_abstraction args n state tree
+  | ModusPonens -> Elaborator.apply_modus_ponens args n state tree
+  | AndIntro -> Elaborator.apply_and_intro args n state tree
+  | AndElim -> Elaborator.apply_and_elim args n state tree
+  | AndElimLeft -> Elaborator.apply_and_elim_left args n state tree
+  | AndElimRight -> Elaborator.apply_and_elim_right args n state tree
+  | OrIntrol -> Elaborator.apply_or_introl args n state tree
+  | OrIntror -> Elaborator.apply_or_intror args n state tree
+  | OrElim -> Elaborator.apply_or_elim args n state tree
+  | TopIntro -> Elaborator.apply_top_intro args n state tree
+  | TopElim -> Elaborator.apply_top_elim args n state tree
+  | BottomElim -> Elaborator.apply_bottom_elim args n state tree
+  | Commute -> Elaborator.apply_commute args n state tree
+  | Assert -> Elaborator.apply_assert args n state tree
+  | ApplyIn -> Elaborator.apply_apply_in args n state tree
 
 let empty = function [] -> true | _ -> false
 
@@ -71,8 +73,8 @@ let _ =
   let proof_state = ref [ get_goal () ] and proof_tree = ref Hole in
   while not @@ empty !proof_state do
     display_help ();
-    let n, r = get_rule () in
-    (match apply_rule !proof_state !proof_tree n r with
+    let n, (args, rule) = get_rule () in
+    (match apply_rule rule args n !proof_state !proof_tree with
     | Left err -> print_string err
     | Right (state, tree) ->
         proof_state := state;
