@@ -13,38 +13,33 @@ let display_intro () =
     \        A1, ..., An |- B\n\n\
     \        The Ais contain only propositional variables, parenthesis, \
      arrows, T (as top),\n\
-    \        F (as bottom), conjunction and disjunction\n"
+    \        F (as bottom), conjunction and disjunction\n\n"
 
 and display_help () =
   print_string
-    "What is the next step of your proof ?\n\n\
-    \        You can :\n\n\
-    \        - Apply an axiom rule by writing 'Axiom'\n\n\
-    \        - Apply the modus ponens on a formula A by writing 'ModusPonens \
-     A'\n\n\
-    \        - Apply the abstraction rule by writing 'Abstraction'\n\n\
-    \        - Apply the and introduction rule by writing 'AndIntro'\n\n\
-    \        - Apply the and elimination rule with the two conjuncts A and B \
-     by writing 'AndElim A B'\n\n\
-    \          Or use the left or right rule by writing 'AndElimLeft A' or \
-     'AndElimRight B'\n\n\
-    \        - Apply the or introduction left rule by writing 'OrIntrol'\n\n\
-    \        - Apply the or introduction right rule by writing 'OrIntror'\n\n\
-    \        - Apply the or elimination rule with the two disjuncts A and B by \
-     writing 'OrElim A B'\n\n\
-    \        - Apply the bottom elimination rule by writing 'BottomElim'\n\n\
-    \        - Apply the top introduction rule by writing 'TopIntro'\n\n\
-    \        - Apply the top elimination rule by writing 'TopElim'\n"
+    "\n\
+     Available rules:\n\
+     Auto, ModusPontens A, Axiom, Abstraction, AndIntro, AndElim A B, \
+     AndElimLeft A, AndElimRight A, OrIntrol, OrIntror, OrElim A B, TopIntro, \
+     TopElim, BottomElim, Commute, Assert A, Apply I in J\n\n"
 
-let get_goal () =
+let rec get_goal () =
   let s = read_line () in
   let l = Lexing.from_string s in
-  Parser.seq Lexer.token l
+  try Parser.seq Lexer.token l
+  with _ ->
+    print_string "Error: the sequent is not well-formed.\n";
+    print_string "Please enter a new sequent.\n";
+    get_goal ()
 
 and get_rule () =
   let s = read_line () in
   let l = Lexing.from_string s in
-  Parser.rule Lexer.token l
+  try Parser.rule Lexer.token l
+  with _ ->
+    print_string "Error: the rule is not well-formed.\n";
+    print_string "Please enter a new rule.\n";
+    get_rule ()
 
 and apply_rule rule args n state tree =
   match rule with
@@ -68,6 +63,12 @@ and apply_rule rule args n state tree =
 
 let empty = function [] -> true | _ -> false
 
+let print_error s =
+  print_string "Error: ";
+  print_string s;
+  print_newline ();
+  print_string "The goals are left unchanged."
+
 let _ =
   display_intro ();
   let proof_state = ref [ get_goal () ] and proof_tree = ref Hole in
@@ -75,11 +76,19 @@ let _ =
     display_help ();
     let n, (args, rule) = get_rule () in
     (match apply_rule rule args n !proof_state !proof_tree with
-    | Left err -> print_string err
+    | Left err -> print_error err
     | Right (state, tree) ->
         proof_state := state;
         proof_tree := tree);
-    Printf.printf "\nThere are %d remaining goals.\n" (List.length !proof_state);
+    Printf.printf "There are %d remaining goals.\n" (List.length !proof_state);
+    goal_to_string !proof_state;
+    print_string "Trying automatic triggers...\n";
+    (match Elaborator.trigger !proof_state !proof_tree with
+    | Left err -> print_error err
+    | Right (state, tree) ->
+        proof_state := state;
+        proof_tree := tree);
+    Printf.printf "There are %d remaining goals.\n" (List.length !proof_state);
     goal_to_string !proof_state
   done;
   print_string "Proof finished. Call to the kernel !";
