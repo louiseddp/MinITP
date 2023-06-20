@@ -36,6 +36,7 @@ type rule =
   | Commute
   | Assert
   | ApplyIn
+  | RenameInto
 
 type proof_term =
   | Empty of (sequent * rule)

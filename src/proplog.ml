@@ -60,6 +60,7 @@ and apply_rule rule args n state tree =
   | Commute -> Elaborator.apply_commute args n state tree
   | Assert -> Elaborator.apply_assert args n state tree
   | ApplyIn -> Elaborator.apply_apply_in args n state tree
+  | RenameInto -> Elaborator.apply_rename_into args n state tree
 
 let empty = function [] -> true | _ -> false
 

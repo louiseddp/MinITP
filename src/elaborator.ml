@@ -336,6 +336,38 @@ let apply_apply_in args n prf_st hpt =
         | _ -> Left "the first index is not an arrow")
   | _ -> Left "the apply ... in ... tactic takes exactly two arguments"
 
+let any f l = List.fold_left (fun acc x -> acc || f x) false l
+
+let apply_rename_into args n prf_st hpt =
+  match args with
+  | [ Term (Var v1); Term (Var v2) ] ->
+      let s, new_prf_st = pop_nth n prf_st in
+      let ctx, t = s in
+      let rec var_appears = function
+        | Top -> false
+        | Bottom -> false
+        | Var x -> x = v2
+        | Arr (a, b) -> var_appears a || var_appears b
+        | And (a, b) -> var_appears a || var_appears b
+        | Or (a, b) -> var_appears a || var_appears b
+      in
+      if any var_appears (t :: ctx) then
+        Left "the variable already appears in the context"
+      else
+        let rec replace_var = function
+          | Var v -> if v = v1 then Var v2 else Var v
+          | Arr (a, b) -> Arr (replace_var a, replace_var b)
+          | And (a, b) -> And (replace_var a, replace_var b)
+          | Or (a, b) -> Or (replace_var a, replace_var b)
+          | Top -> Top
+          | Bottom -> Bottom
+        in
+        let prf_st =
+          insert_nth n (List.map replace_var ctx, replace_var t) new_prf_st
+        in
+        Right (prf_st, hpt)
+  | _ -> Left "the rename ... into ... tactic takes exactly two arguments"
+
 (* The proof terms of the kernel are terms which do not contains hole *)
 
 let rec hpt_to_pt = function

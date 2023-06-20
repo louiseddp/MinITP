@@ -27,7 +27,10 @@
         "F",            BOTTOM;
         "Commute",      COMMUTE;
         "Assert",       ASSERT;
-        "in",           IN
+        "Apply",        APPLY;
+        "in",           IN;
+        "Rename",       RENAME;
+        "into",         INTO;
       ] ;
     fun s ->
       try  Hashtbl.find h s

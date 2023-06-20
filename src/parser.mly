@@ -37,8 +37,9 @@
 %token COMMUTE
 %token ASSERT
 %token APPLY
-
 %token IN
+%token RENAME
+%token INTO
 
 %start seq
 %start rule
@@ -83,5 +84,6 @@ infrule:
   | BOTTOMELIM EOF                    { ([], BottomElim) }
   | COMMUTE EOF                       { ([], Commute) }
   | ASSERT f=formula EOF              { ([Term f], Assert) }
-  | APPLY f=formula IN h=INT          { ([Term f; Index h], ApplyIn ) }
+  | APPLY h1=INT IN h2=INT            { ([Index (h1-1); Index (h2-1)], ApplyIn ) }
+  | RENAME v1=IDENT INTO v2=IDENT     { ([Term (Var v1); Term (Var v2)], RenameInto)}
 ;
