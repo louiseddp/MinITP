@@ -84,11 +84,6 @@ let rec insert_nth n x l =
   | y :: ys -> if n = 0 then x :: l else y :: insert_nth (n - 1) x ys
 
 (* Basic tactics : apply the rules of the intuitionnistic logic *)
-let print_error s =
-  print_string "Error: ";
-  print_string s;
-  print_newline ();
-  print_string "The goals are left unchanged."
 
 let apply_axiom args n prf_st hpt =
   match args with
@@ -116,6 +111,7 @@ let apply_abstraction args n prf_st hpt =
       with _ -> Left "the formula is not an arrow")
   | _ -> Left "the abstraction does not take arguments"
 
+(* Equivalent to apply *)
 let apply_modus_ponens args n prf_st hpt =
   match args with
   | [ Term a ] ->
@@ -312,6 +308,33 @@ let apply_assert args n prf_st hpt =
         prf_st hpt
   | _ -> Left "the assert tactic takes exactly one term argument"
 
+let apply_apply_in args n prf_st hpt =
+  match args with
+  | [ Index i; Index j ] -> (
+      let s, new_prf_st = pop_nth n prf_st in
+      let ctx, c = s in
+      if (i < 1 || i > List.length ctx) && (j < 1 || j > List.length ctx) then
+        Left "the indexes are out of bounds"
+      else if i = j then Left "the indexes must be different"
+      else
+        let f, g = (nth i ctx, nth j ctx) in
+        match f with
+        | Arr (a, b) ->
+            if a = g then
+              fold_apply_once
+                [
+                  apply_assert [ Term b ] n;
+                  apply_modus_ponens [ Term a ] (n + 1);
+                  apply_axiom [] (n + 1);
+                  apply_axiom [] (n + 1);
+                ]
+                prf_st hpt
+            else
+              Left
+                "the term on the left of the arrow does not match the term \
+                 applied to"
+        | _ -> Left "the first index is not an arrow")
+  | _ -> Left "the apply ... in ... tactic takes exactly two arguments"
 
 (* The proof terms of the kernel are terms which do not contains hole *)
 
