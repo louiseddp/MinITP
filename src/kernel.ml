@@ -1,24 +1,12 @@
 type trm =
   | Var of string
-  | Arr of (trm * trm)
-  | And of (trm * trm)
-  | Or of (trm * trm)
+  | Arr of trm * trm
+  | And of trm * trm
+  | Or of trm * trm
   | Top
   | Bottom
 
-(** Contexts : on paper an arbitrary context is often represented by the variable Γ.
-As it is a list of terms, in OCaml we will use the list notation [A1; ...; An] for the sequent A1, ..., An *)
-
-type context = trm list
-
-(** Sequent : a sequent is a pair between a context and a term, a pair between the hypothesis and the conclusion
-Example: the sequent A -> B, A |- B  would be written ([Arr (Var "A", Var "B"); Var "A"], Var "B") *)
-
-type sequent = context * trm
-type goal = sequent list
-type tactic_arg = Index of int | Term of trm
-
-type rule =
+and rule =
   | Auto
   | ModusPonens
   | Axiom
@@ -37,6 +25,18 @@ type rule =
   | Assert
   | ApplyIn
   | RenameInto
+
+(** Contexts : on paper an arbitrary context is often represented by the variable Γ.
+As it is a list of terms, in OCaml we will use the list notation [A1; ...; An] for the sequent A1, ..., An *)
+
+type context = trm list
+
+(** Sequent : a sequent is a pair between a context and a term, a pair between the hypothesis and the conclusion
+Example: the sequent A -> B, A |- B  would be written ([Arr (Var "A", Var "B"); Var "A"], Var "B") *)
+
+type sequent = context * trm
+type goal = sequent list
+type tactic_arg = Index of int | Term of trm
 
 type proof_term =
   | Empty of (sequent * rule)
