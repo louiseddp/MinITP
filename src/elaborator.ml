@@ -380,9 +380,6 @@ let trigger_axiom n prf_st =
       "the formula does not appear in the context, could not apply trigger \
        axiom"
 
-let any f l = List.fold_left (fun acc x -> acc || f x) false l
-let first (a, b) = a
-
 let rec trigger_or_elim n prf_st =
   let s, _ = pop_nth n prf_st in
   let l, t = s in
@@ -399,21 +396,23 @@ and search_for_or l prf_st =
           Right [ Term a; Term b ])
   | _ :: l' -> search_for_or l' prf_st
 
-let empty = function [] -> true | _ -> false
+exception Triggered of int
 
 let trigger prf_st hpt =
-  let axiom = trigger_axiom 0 prf_st and or_elim = trigger_or_elim 0 prf_st in
-  if is_right axiom then (
-    print_string "Automaticaly applied Axiom\n";
-    let args = from_right axiom in
-    apply_axiom args 0 prf_st hpt)
-  else if is_right or_elim then (
-    print_string "Automaticaly applied OrElim\n";
-    let args = from_right or_elim in
-    apply_or_elim args 0 prf_st hpt)
-  else (
+  let triggers = [ trigger_axiom; trigger_or_elim ]
+  and functions = [ apply_axiom; apply_or_elim ]
+  and messages = [ "Axiom"; "OrElim" ] in
+  let applicable = List.map (fun f -> f 0 prf_st) triggers in
+  try
+    for i = 0 to List.length triggers - 1 do
+      if is_right (nth i applicable) then raise @@ Triggered i
+    done;
     print_string "Nothing to trigger\n";
-    Right (prf_st, hpt))
+    Right (prf_st, hpt)
+  with Triggered i ->
+    print_string @@ "Automaticaly applied " ^ List.nth messages i ^ "\n";
+    let args = from_right (nth i applicable) in
+    (nth i functions) args 0 prf_st hpt
 
 let rec hpt_to_pt = function
   | Hole -> failwith "proof not finished"
