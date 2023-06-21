@@ -9,7 +9,7 @@ all:
 	ocamlopt -c parser.ml
 	ocamlopt -c lexer.ml
 	ocamlopt -c proplog.ml
-	ocamlopt -o proplog lexer.cmx parser.cmx kernel.cmx printer.cmx elaborator.cmx proplog.cmx either.cmx
+	ocamlopt -o proplog either.cmx kernel.cmx printer.cmx elaborator.cmx parser.cmx lexer.cmx proplog.cmx
 
 clean:
 	rm -f *.o *.cmx *.cmi proplog *.automaton *.conflicts parser.ml lexer.ml parser.mli

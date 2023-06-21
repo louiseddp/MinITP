@@ -368,7 +368,52 @@ let apply_rename_into args n prf_st hpt =
         Right (prf_st, hpt)
   | _ -> Left "the rename ... into ... tactic takes exactly two arguments"
 
-(* The proof terms of the kernel are terms which do not contains hole *)
+let trigered_tactics = Hashtbl.create 16
+
+let trigger_axiom n prf_st =
+  let (l, t), new_prf_st = pop_nth n prf_st in
+  if mem t l then (
+    Hashtbl.add trigered_tactics t Axiom;
+    Right [])
+  else
+    Left
+      "the formula does not appear in the context, could not apply trigger \
+       axiom"
+
+let any f l = List.fold_left (fun acc x -> acc || f x) false l
+let first (a, b) = a
+
+let rec trigger_or_elim n prf_st =
+  let s, _ = pop_nth n prf_st in
+  let l, t = s in
+  search_for_or l prf_st
+
+and search_for_or l prf_st =
+  match l with
+  | [] -> Left "could not find an or in the context"
+  | (Or (a, b) as t) :: l' -> (
+      match Hashtbl.find_opt trigered_tactics t with
+      | Some _ -> search_for_or l' prf_st
+      | None ->
+          Hashtbl.add trigered_tactics t OrElim;
+          Right [ Term a; Term b ])
+  | _ :: l' -> search_for_or l' prf_st
+
+let empty = function [] -> true | _ -> false
+
+let trigger prf_st hpt =
+  let axiom = trigger_axiom 0 prf_st and or_elim = trigger_or_elim 0 prf_st in
+  if is_right axiom then (
+    print_string "Automaticaly applied Axiom\n";
+    let args = from_right axiom in
+    apply_axiom args 0 prf_st hpt)
+  else if is_right or_elim then (
+    print_string "Automaticaly applied OrElim\n";
+    let args = from_right or_elim in
+    apply_or_elim args 0 prf_st hpt)
+  else (
+    print_string "Nothing to trigger\n";
+    Right (prf_st, hpt))
 
 let rec hpt_to_pt = function
   | Hole -> failwith "proof not finished"

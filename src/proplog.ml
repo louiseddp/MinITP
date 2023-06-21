@@ -1,4 +1,5 @@
 open Kernel
+open Either
 open Printer
 open Elaborator
 open Parser
@@ -83,14 +84,15 @@ let _ =
         proof_tree := tree);
     Printf.printf "There are %d remaining goals.\n" (List.length !proof_state);
     goal_to_string !proof_state;
-    print_string "Trying automatic triggers...\n";
-    (match Elaborator.trigger !proof_state !proof_tree with
-    | Left err -> print_error err
-    | Right (state, tree) ->
-        proof_state := state;
-        proof_tree := tree);
-    Printf.printf "There are %d remaining goals.\n" (List.length !proof_state);
-    goal_to_string !proof_state
+    if not @@ empty !proof_state then (
+      print_string "Trying automatic triggers...\n";
+      (match Elaborator.trigger !proof_state !proof_tree with
+      | Left err -> print_error err
+      | Right (state, tree) ->
+          proof_state := state;
+          proof_tree := tree);
+      Printf.printf "There are %d remaining goals.\n" (List.length !proof_state);
+      goal_to_string !proof_state)
   done;
   print_string "Proof finished. Call to the kernel !";
   verif_proof_term @@ hpt_to_pt !proof_tree;

@@ -8,6 +8,8 @@ let find_left = function Left v -> Some v | Right _ -> None
 let find_right = function Left _ -> None | Right v -> Some v
 let map_left f = function Left v -> Left (f v) | Right _ as e -> e
 let map_right f = function Left _ as e -> e | Right v -> Right (f v)
+let from_left = function Left v -> v | Right _ -> failwith "from_left"
+let from_right = function Left _ -> failwith "from_right" | Right v -> v
 
 let map ~left ~right = function
   | Left v -> Left (left v)
