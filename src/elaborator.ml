@@ -29,7 +29,7 @@ let rec count_holes = function
 
 (* This function replace the rightmost hole by a new h_proof_term *)
 
-and replace_in_hpt h s r n =
+let rec replace_in_hpt h s r n =
   match h with
   | Hole -> (
       match r with
@@ -92,7 +92,8 @@ let apply_axiom args n prf_st hpt =
       let l, a = s in
       try
         Kernel.verif_axiom a l;
-        let prf_st = new_prf_st and hpt = replace_in_hpt hpt s Axiom n in
+        let prf_st = new_prf_st in
+        let hpt = replace_in_hpt hpt s Axiom n in
         Right (prf_st, hpt)
       with _ -> Left "the formula is not in the context")
   | _ -> Left "the axiom does not take arguments"
@@ -105,8 +106,8 @@ let apply_abstraction args n prf_st hpt =
       try
         let a, b = split_arrow t in
         let s' = (a :: ctx, b) in
-        let prf_st = insert_nth n s' new_prf_st
-        and hpt = replace_in_hpt hpt s Abstraction n in
+        let prf_st = insert_nth n s' new_prf_st in
+        let hpt = replace_in_hpt hpt s Abstraction n in
         Right (prf_st, hpt)
       with _ -> Left "the formula is not an arrow")
   | _ -> Left "the abstraction does not take arguments"
@@ -117,9 +118,10 @@ let apply_modus_ponens args n prf_st hpt =
   | [ Term a ] ->
       let s, new_prf_st = pop_nth n prf_st in
       let ctx, b = s in
-      let s1 = (ctx, Arr (a, b)) and s2 = (ctx, a) in
-      let prf_st = insert_nth n s1 (insert_nth n s2 new_prf_st)
-      and hpt = replace_in_hpt hpt s ModusPonens n in
+      let s1 = (ctx, Arr (a, b)) in
+      let s2 = (ctx, a) in
+      let prf_st = insert_nth n s1 (insert_nth n s2 new_prf_st) in
+      let hpt = replace_in_hpt hpt s ModusPonens n in
       Right (prf_st, hpt)
   | _ -> Left "the modus ponens takes exactly one term argument"
 
@@ -130,12 +132,13 @@ let apply_and_intro args n prf_st hpt =
       let ctx, t = s in
       try
         let a, b = split_and t in
-        let s1 = (ctx, a) and s2 = (ctx, b) in
-        let prf_st = insert_nth n s1 (insert_nth n s2 new_prf_st)
-        and hpt = replace_in_hpt hpt s AndIntro n in
+        let s1 = (ctx, a) in
+        let s2 = (ctx, b) in
+        let prf_st = insert_nth n s1 (insert_nth n s2 new_prf_st) in
+        let hpt = replace_in_hpt hpt s AndIntro n in
         Right (prf_st, hpt)
       with _ -> Left "the formula is not a conjunction")
-  | _ -> Left "the and introduction does not take arguments"
+  | _ -> Left "the let introduction does not take arguments"
 
 let apply_and_elim args n prf_st hpt =
   match args with
@@ -143,11 +146,12 @@ let apply_and_elim args n prf_st hpt =
       let f = And (a, b) in
       let s, new_prf_st = pop_nth n prf_st in
       let ctx, c = s in
-      let s1 = (ctx, f) and s2 = (a :: b :: ctx, c) in
-      let prf_st = insert_nth n s1 (insert_nth n s2 new_prf_st)
-      and hpt = replace_in_hpt hpt s AndElim n in
+      let s1 = (ctx, f) in
+      let s2 = (a :: b :: ctx, c) in
+      let prf_st = insert_nth n s1 (insert_nth n s2 new_prf_st) in
+      let hpt = replace_in_hpt hpt s AndElim n in
       Right (prf_st, hpt)
-  | _ -> Left "the and elimination takes exactly two term arguments"
+  | _ -> Left "the let elimination takes exactly two term arguments"
 
 let apply_and_elim_right args n prf_st hpt =
   match args with
@@ -157,7 +161,7 @@ let apply_and_elim_right args n prf_st hpt =
       match apply_and_elim [ Term f; Term a ] n prf_st hpt with
       | Left err -> Left err
       | Right (prf_st', hpt') -> apply_axiom [] (n + 1) prf_st' hpt')
-  | _ -> Left "the and left elimination takes exactly one term argument"
+  | _ -> Left "the let left elimination takes exactly one term argument"
 
 let apply_and_elim_left args n prf_st hpt =
   match args with
@@ -167,7 +171,7 @@ let apply_and_elim_left args n prf_st hpt =
       match apply_and_elim [ Term a; Term f ] n prf_st hpt with
       | Left err -> Left err
       | Right (prf_st', hpt') -> apply_axiom [] (n + 1) prf_st' hpt')
-  | _ -> Left "the and right elimination takes exactly one term argument"
+  | _ -> Left "the let right elimination takes exactly one term argument"
 
 let apply_or_introl args n prf_st hpt =
   match args with
@@ -177,8 +181,8 @@ let apply_or_introl args n prf_st hpt =
       try
         let a, b = split_or t in
         let s' = (ctx, a) in
-        let prf_st = insert_nth n s' new_prf_st
-        and hpt = replace_in_hpt hpt s OrIntrol n in
+        let prf_st = insert_nth n s' new_prf_st in
+        let hpt = replace_in_hpt hpt s OrIntrol n in
         Right (prf_st, hpt)
       with _ -> Left "the formula is not a disjunction")
   | _ -> Left "the or left introduction does not take arguments"
@@ -191,8 +195,8 @@ let apply_or_intror args n prf_st hpt =
       try
         let a, b = split_or t in
         let s' = (ctx, b) in
-        let prf_st = insert_nth n s' new_prf_st
-        and hpt = replace_in_hpt hpt s OrIntror n in
+        let prf_st = insert_nth n s' new_prf_st in
+        let hpt = replace_in_hpt hpt s OrIntror n in
         Right (prf_st, hpt)
       with _ -> Left "the formula is not a disjunction")
   | _ -> Left "the or right introduction does not take arguments"
@@ -208,7 +212,8 @@ let apply_or_elim args n prf_st hpt =
       let s3 = (b :: ctx, c) in
       let prf_st =
         insert_nth n s1 (insert_nth n s2 (insert_nth n s3 new_prf_st))
-      and hpt = replace_in_hpt hpt s OrElim n in
+      in
+      let hpt = replace_in_hpt hpt s OrElim n in
       Right (prf_st, hpt)
   | _ -> Left "the or elimination takes exactly two term arguments"
 
@@ -216,7 +221,8 @@ let apply_top_intro args n prf_st hpt =
   match args with
   | [] ->
       let s, new_prf_st = pop_nth n prf_st in
-      let prf_st = new_prf_st and hpt = replace_in_hpt hpt s TopIntro n in
+      let prf_st = new_prf_st in
+      let hpt = replace_in_hpt hpt s TopIntro n in
       Right (prf_st, hpt)
   | _ -> Left "the top introduction does not take arguments"
 
@@ -226,8 +232,8 @@ let apply_top_elim args n prf_st hpt =
       let s, new_prf_st = pop_nth n prf_st in
       let ctx, a = s in
       let s' = (Top :: ctx, a) in
-      let prf_st = insert_nth n s' new_prf_st
-      and hpt = replace_in_hpt hpt s TopElim n in
+      let prf_st = insert_nth n s' new_prf_st in
+      let hpt = replace_in_hpt hpt s TopElim n in
       Right (prf_st, hpt)
   | _ -> Left "the top elimination does not take arguments"
 
@@ -237,8 +243,8 @@ let apply_bottom_elim args n prf_st hpt =
       let s, new_prf_st = pop_nth n prf_st in
       let ctx, a = s in
       let s' = (ctx, Bottom) in
-      let prf_st = insert_nth n s' new_prf_st
-      and hpt = replace_in_hpt hpt s BottomElim n in
+      let prf_st = insert_nth n s' new_prf_st in
+      let hpt = replace_in_hpt hpt s BottomElim n in
       Right (prf_st, hpt)
   | _ -> Left "the bottom elimination does not take arguments"
 
@@ -256,7 +262,7 @@ let rec fold_apply tactics prf_st hpt =
       | Left _ -> fold_apply rest prf_st hpt
       | Right (prf_st', hpt') -> fold_apply tactics prf_st' hpt')
 
-and apply_auto args n prf_st hpt =
+let apply_auto args n prf_st hpt =
   match args with
   | [] ->
       let tactics = [ apply_abstraction [] n; apply_axiom [] n ] in
@@ -368,51 +374,112 @@ let apply_rename_into args n prf_st hpt =
         Right (prf_st, hpt)
   | _ -> Left "the rename ... into ... tactic takes exactly two arguments"
 
+type trigger_var = TGoal | TSomeHyp
+type interpreted_var = IGoal of trm | ISomeHyp of trm list
+
+type trigger_form =
+  (* Variable are removed and replaced by Discard or MetaVar *)
+  (* wich can used to get either discard or get the subform *)
+  (* | TVar of string *)
+  | TArr of trigger_form * trigger_form
+  | TAnd of trigger_form * trigger_form
+  | TOr of trigger_form * trigger_form
+  | TTop
+  | TBottom
+  | TDiscard
+  | TMetaVar
+
+type trigger =
+  | TEq of trigger_var * trigger_var
+  | TIs of trigger_var * trigger_form
+  | TContains of trigger_var * trigger_form
+
+let infix a g c = g a c
+let tgoal = TGoal
+let tsome_hyp = TSomeHyp
+let tarr a b = TArr (a, b)
+let tand a b = TAnd (a, b)
+let tor a b = TOr (a, b)
+let ttop = TTop
+let tbottom = TBottom
+let tdiscard = TDiscard
+let tmetavar = TMetaVar
+let teq a b = TEq (a, b)
+let tis a b = TIs (a, b)
+let tcontains a b = TContains (a, b)
+let trigger_axiom = infix tgoal teq tsome_hyp
+let trigger_or_elim = infix tsome_hyp tis (tor tmetavar tmetavar)
+let trigger_and_intro = infix tgoal tis (tand tdiscard tdiscard)
+
+let interpret_trigger_var prf_st =
+  let (hyps, goal), _ = pop_nth 0 prf_st in
+  function TGoal -> [ goal ] | TSomeHyp -> hyps
+
+let interpret_teq prf_st a b =
+  let a' = interpret_trigger_var prf_st a in
+  let b' = interpret_trigger_var prf_st b in
+  if List.exists (fun x -> List.mem x b') a' then Some [] else None
+
+let rec interpret_trm_with_trigger_form trm form =
+  match (trm, form) with
+  | Top, TTop -> Some []
+  | Bottom, TBottom -> Some []
+  | Arr (a, b), TArr (a', b') -> (
+      let a'' = interpret_trm_with_trigger_form a a' in
+      let b'' = interpret_trm_with_trigger_form b b' in
+      match (a'', b'') with Some x, Some y -> Some (x @ y) | _ -> None)
+  | And (a, b), TAnd (a', b') -> (
+      let a'' = interpret_trm_with_trigger_form a a' in
+      let b'' = interpret_trm_with_trigger_form b b' in
+      match (a'', b'') with Some x, Some y -> Some (x @ y) | _ -> None)
+  | Or (a, b), TOr (a', b') -> (
+      let a'' = interpret_trm_with_trigger_form a a' in
+      let b'' = interpret_trm_with_trigger_form b b' in
+      match (a'', b'') with Some x, Some y -> Some (x @ y) | _ -> None)
+  | meta, TMetaVar -> Some [ Term meta ]
+  | _, TDiscard -> Some []
+  | _ -> None
+
+let rec flatten_option_list = function
+  | [] -> Some []
+  | None :: _ -> None
+  | Some x :: xs -> (
+      match flatten_option_list xs with None -> None | Some y -> Some (x @ y))
+
+let interpret_tis prf_st a b =
+  let a' = interpret_trigger_var prf_st a in
+  let result = List.map (fun x -> interpret_trm_with_trigger_form x b) a' in
+  flatten_option_list result
+
+let interpret_tcontains prf_st a b = None
+
+let rec interpret_trigger prf_st = function
+  | TEq (a, b) -> interpret_teq prf_st a b
+  | TIs (a, b) -> interpret_tis prf_st a b
+  | TContains (a, b) -> interpret_tcontains prf_st a b
+
 let trigered_tactics = Hashtbl.create 16
 
-let trigger_axiom n prf_st =
-  let (l, t), new_prf_st = pop_nth n prf_st in
-  if mem t l then (
-    Hashtbl.add trigered_tactics t Axiom;
-    Right [])
-  else
-    Left
-      "the formula does not appear in the context, could not apply trigger \
-       axiom"
-
-let rec trigger_or_elim n prf_st =
-  let s, _ = pop_nth n prf_st in
-  let l, t = s in
-  search_for_or l prf_st
-
-and search_for_or l prf_st =
-  match l with
-  | [] -> Left "could not find an or in the context"
-  | (Or (a, b) as t) :: l' -> (
-      match Hashtbl.find_opt trigered_tactics t with
-      | Some _ -> search_for_or l' prf_st
-      | None ->
-          Hashtbl.add trigered_tactics t OrElim;
-          Right [ Term a; Term b ])
-  | _ :: l' -> search_for_or l' prf_st
-
-exception Triggered of int
-
-let trigger prf_st hpt =
-  let triggers = [ trigger_axiom; trigger_or_elim ]
-  and functions = [ apply_axiom; apply_or_elim ]
-  and messages = [ "Axiom"; "OrElim" ] in
-  let applicable = List.map (fun f -> f 0 prf_st) triggers in
-  try
-    for i = 0 to List.length triggers - 1 do
-      if is_right (nth i applicable) then raise @@ Triggered i
-    done;
-    print_string "Nothing to trigger\n";
-    Right (prf_st, hpt)
-  with Triggered i ->
-    print_string @@ "Automaticaly applied " ^ List.nth messages i ^ "\n";
-    let args = from_right (nth i applicable) in
-    (nth i functions) args 0 prf_st hpt
+let rec trigger prf_st hpt =
+  let triggers =
+    [
+      (trigger_axiom, apply_axiom, "Axiom");
+      (trigger_or_elim, apply_or_elim, "OrElim");
+      (trigger_and_intro, apply_and_intro, "AndIntro");
+    ]
+  in
+  let rec trigger' triggers =
+    match triggers with
+    | [] -> Left "no trigger found"
+    | (option_trigger, tactic, message) :: triggers' -> (
+        match interpret_trigger prf_st option_trigger with
+        | Some l ->
+            print_string @@ "Automaticaly applied " ^ message ^ "\n";
+            Hashtbl.add trigered_tactics option_trigger tactic;
+            tactic l 0 prf_st hpt
+        | None -> trigger' triggers')
+  in
+  trigger' triggers
 
 let rec hpt_to_pt = function
   | Hole -> failwith "proof not finished"
