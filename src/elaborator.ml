@@ -375,7 +375,6 @@ let apply_rename_into args n prf_st hpt =
   | _ -> Left "the rename ... into ... tactic takes exactly two arguments"
 
 type trigger_var = TGoal | TSomeHyp
-type interpreted_var = IGoal of trm | ISomeHyp of trm list
 
 type trigger_form =
   (* Variable are removed and replaced by Discard or MetaVar *)
@@ -418,7 +417,7 @@ let interpret_trigger_var prf_st =
 let interpret_teq prf_st a b =
   let a' = interpret_trigger_var prf_st a in
   let b' = interpret_trigger_var prf_st b in
-  if List.exists (fun x -> List.mem x b') a' then Some [] else None
+  if List.exists (fun x -> List.mem x a') b' then Some [] else None
 
 let rec interpret_trm_with_trigger_form trm form =
   match (trm, form) with
@@ -436,22 +435,37 @@ let rec interpret_trm_with_trigger_form trm form =
       let a'' = interpret_trm_with_trigger_form a a' in
       let b'' = interpret_trm_with_trigger_form b b' in
       match (a'', b'') with Some x, Some y -> Some (x @ y) | _ -> None)
-  | meta, TMetaVar -> Some [ Term meta ]
+  | meta, TMetaVar -> Some [ meta ]
   | _, TDiscard -> Some []
   | _ -> None
 
 let rec flatten_option_list = function
-  | [] -> Some []
-  | None :: _ -> None
-  | Some x :: xs -> (
-      match flatten_option_list xs with None -> None | Some y -> Some (x @ y))
+  | [] -> None
+  | None :: xs -> flatten_option_list xs
+  | Some x :: xs -> Some x
 
 let interpret_tis prf_st a b =
   let a' = interpret_trigger_var prf_st a in
   let result = List.map (fun x -> interpret_trm_with_trigger_form x b) a' in
   flatten_option_list result
 
-let interpret_tcontains prf_st a b = None
+let rec interpret_tcontains prf_st a b =
+  let a' = interpret_trigger_var prf_st a in
+  let result =
+    List.map
+      (fun x ->
+        match interpret_trm_with_trigger_form x b with
+        | None -> (
+            match x with
+            | Arr (a'', b') | And (a'', b') | Or (a'', b') -> (
+                match interpret_trm_with_trigger_form a'' b with
+                | None -> interpret_trm_with_trigger_form b' b
+                | succes' -> succes')
+            | _ -> None)
+        | succes -> succes)
+      a'
+  in
+  flatten_option_list result
 
 let rec interpret_trigger prf_st = function
   | TEq (a, b) -> interpret_teq prf_st a b
@@ -474,9 +488,13 @@ let rec trigger prf_st hpt =
     | (option_trigger, tactic, message) :: triggers' -> (
         match interpret_trigger prf_st option_trigger with
         | Some l ->
-            print_string @@ "Automaticaly applied " ^ message ^ "\n";
-            Hashtbl.add trigered_tactics option_trigger tactic;
-            tactic l 0 prf_st hpt
+            if List.length l > 0 && Hashtbl.mem trigered_tactics l then
+              trigger' triggers'
+            else (
+              print_string @@ "Automaticaly applied " ^ message ^ "\n";
+              Hashtbl.add trigered_tactics l tactic;
+              let l' = List.map (fun x -> Term x) l in
+              tactic l' 0 prf_st hpt)
         | None -> trigger' triggers')
   in
   trigger' triggers
