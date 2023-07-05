@@ -57,6 +57,6 @@ let _ =
         match !proof_state with
             | [] -> proof_finished := true; 
             print_string "Proof finished. Call to the kernel !" ; 
-            let ptree = hpt_to_pt !proof_tree in verif_proof_term ptree; print_string ("\nQED.\n")
+            let ptree = hpt_to_pt !proof_tree in verif_proof_term ptree s; print_string ("\nQED.\n")
             | x :: xs -> goal_to_string (x :: xs)
         done

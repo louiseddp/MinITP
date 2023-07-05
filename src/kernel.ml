@@ -99,15 +99,23 @@ If we go back and look at the modus ponens rule, we note that the contexts shoul
 Thus, to check a proof tree, we often need to check equalities between contexts. *)
 
 let rec eq_ctx c1 c2 = 
-match c1, c2 with
-| [], [] -> true
-| x1::xs1, x2::xs2 -> eq_term x1 x2 && eq_ctx xs1 xs2
-| _, _ -> false
+    match c1, c2 with
+    | [], [] -> true
+    | x1::xs1, x2::xs2 -> eq_term x1 x2 && eq_ctx xs1 xs2
+    | _, _ -> false
+
+(** This function checks the equality between sequents. It is needed because otherwise, the user can provide 
+a proof tree which is not the proof tree of the initial sequent. **)
+
+let eq_seq s1 s2 = 
+    let (c1, t1) = s1 in
+    let (c2, t2) = s2 in
+    eq_ctx c1 c2 && eq_term t1 t2
 
 (** This function checks the correction of an application of an axiom rule : the term t must belong to the context l *)
 
 let verif_axiom t l = if mem t l then () else failwith 
-"could not apply the axiom: the conclusion of the sequent does not belong to the premises"
+    "could not apply the axiom: the conclusion of the sequent does not belong to the premises"
 
 (** This function checks the correction of an application of the abstraction rule *)
 
@@ -264,6 +272,7 @@ let verif_top_elim seq1 seq2 =
         else failwith "the conclusions are different during the use of top-elim rule"
 
 (* Verification of bottom_elim *)
+
 let verif_bottom_elim seq1 seq2 = 
     let (c1, t1) = seq1 in
     let (c2, t2) = seq2 in
@@ -285,8 +294,10 @@ let current_sequent p =
 it checks each application of the rules, each premise and each conclusion: all of them must be correct application of the given rule. 
 If it is the case, it prints "Qed" because the proof is correct, otherwise it returns an error *)
 
-let rec verif_proof_term p =
-    match p with
+let verif_proof_term p seq =
+    let initial_sequent = current_sequent p in
+    if eq_seq initial_sequent seq then 
+    let rec aux p = match p with
     | Empty (s, r) ->
         begin match r with
         | Axiom -> let (l, a) = s in verif_axiom a l
@@ -295,16 +306,16 @@ let rec verif_proof_term p =
         end
     | Unary (s, r, p') ->
         begin match r with
-        | Abstraction -> let s' = current_sequent p' in verif_abstraction s s' ; verif_proof_term p'
-        | OrIntrol -> let s' = current_sequent p' in verif_or_introl s s' ; verif_proof_term p'
-        | OrIntror -> let s' = current_sequent p' in verif_or_intror s s' ; verif_proof_term p'
-        | BottomElim -> let s' = current_sequent p' in verif_bottom_elim s s' ; verif_proof_term p'
-        | TopElim -> let s' = current_sequent p' in verif_top_elim s s' ; verif_proof_term p'
+        | Abstraction -> let s' = current_sequent p' in verif_abstraction s s' ; aux p'
+        | OrIntrol -> let s' = current_sequent p' in verif_or_introl s s' ; aux p'
+        | OrIntror -> let s' = current_sequent p' in verif_or_intror s s' ; aux p'
+        | BottomElim -> let s' = current_sequent p' in verif_bottom_elim s s' ; aux p'
+        | TopElim -> let s' = current_sequent p' in verif_top_elim s s' ; aux p'
         | _ -> failwith "the rule used is not unary but it is a label of an unary node in the proof tree"
         end
     | Binary (s, r, p1, p2) ->  
-        let _ = verif_proof_term p1 in 
-        let _ = verif_proof_term p2 in
+        let _ = aux p1 in 
+        let _ = aux p2 in
         let s1 = current_sequent p1 in 
         let s2 = current_sequent p2 in
         begin match r with
@@ -323,8 +334,9 @@ let rec verif_proof_term p =
             let s2 = current_sequent p2 in 
             let s3 = current_sequent p3 in
             let _ = verif_or_elim s s1 s2 s3 in
-            let _ = verif_proof_term p1 in 
-            let _ = verif_proof_term p2 in
-            verif_proof_term p3
+            let _ = aux p1 in 
+            let _ = aux p2 in
+            aux p3
         | _ -> failwith "the only ternary rule is or-elim"
-        end
+        end in aux p
+    else failwith "the proof term provided is not the proof term of the initial goal"
