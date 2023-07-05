@@ -66,6 +66,7 @@ let rec verif_proof_term_debug p =
 
         *)
 
+
 let _ = 
         print_string "Welcome to the LogMin proof assistant. Enter the sequent that you want to prove. \n 
         It should have the form
@@ -94,6 +95,6 @@ let _ =
         Printf.printf "\nThere are %d remaining goals.\n" len ;
         match !proof_state with
             | [] -> proof_finished := true; 
-            print_string "Proof finished. Call to the kernel !" ; let ptree = hpt_to_pt !proof_tree in verif_proof_term ptree; print_string ("\nQED.\n")
+            print_string "Proof finished. Call to the kernel !" ; let ptree = hpt_to_pt !proof_tree in verif_proof_term ptree s; print_string ("\nQED.\n")
             | x :: xs -> goal_to_string (x :: xs)
         done
