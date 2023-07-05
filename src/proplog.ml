@@ -73,7 +73,8 @@ let print_error s =
 
 let _ =
   display_intro ();
-  let proof_state = ref [ get_goal () ] and proof_tree = ref Hole in
+  let g = get_goal () in
+  let proof_state = ref [ g ] and proof_tree = ref Hole in
   while not @@ empty !proof_state do
     display_help ();
     let n, (args, rule) = get_rule () in
@@ -95,5 +96,5 @@ let _ =
       goal_to_string !proof_state)
   done;
   print_string "Proof finished. Call to the kernel !";
-  verif_proof_term @@ hpt_to_pt !proof_tree;
+  verif_proof_term (hpt_to_pt !proof_tree) g;
   print_string "\nQED.\n"
