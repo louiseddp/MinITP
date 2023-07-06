@@ -374,12 +374,20 @@ let apply_rename_into args n prf_st hpt =
         Right (prf_st, hpt)
   | _ -> Left "the rename ... into ... tactic takes exactly two arguments"
 
+let counter =
+  let x = ref 0 in
+  fun () ->
+    incr x;
+    !x
+
+let apply_brute_rename args n prf_st hpt =
+  let s = "A" ^ string_of_int (counter ()) in
+  apply_rename_into [ Term (Var "A"); Term (Var s) ] n prf_st hpt
+
 type trigger_var = TGoal | TSomeHyp
 
 type trigger_form =
-  (* Variable are removed and replaced by Discard or MetaVar *)
-  (* wich can used to get either discard or get the subform *)
-  (* | TVar of string *)
+  | TVar of string
   | TArr of trigger_form * trigger_form
   | TAnd of trigger_form * trigger_form
   | TOr of trigger_form * trigger_form
@@ -396,6 +404,7 @@ type trigger =
 let infix a g c = g a c
 let tgoal = TGoal
 let tsome_hyp = TSomeHyp
+let tvar s = TVar s
 let tarr a b = TArr (a, b)
 let tand a b = TAnd (a, b)
 let tor a b = TOr (a, b)
@@ -409,6 +418,8 @@ let tcontains a b = TContains (a, b)
 let trigger_axiom = infix tgoal teq tsome_hyp
 let trigger_or_elim = infix tsome_hyp tis (tor tmetavar tmetavar)
 let trigger_and_intro = infix tgoal tis (tand tdiscard tdiscard)
+let trigger_brute_rename_hyp = infix tsome_hyp tcontains (tvar "A")
+let trigger_brute_rename_goal = infix tgoal tcontains (tvar "A")
 
 let interpret_trigger_var prf_st =
   let (hyps, goal), _ = pop_nth 0 prf_st in
@@ -423,6 +434,7 @@ let rec interpret_trm_with_trigger_form trm form =
   match (trm, form) with
   | Top, TTop -> Some []
   | Bottom, TBottom -> Some []
+  | Var v, TVar v' -> if v = v' then Some [] else None
   | Arr (a, b), TArr (a', b') -> (
       let a'' = interpret_trm_with_trigger_form a a' in
       let b'' = interpret_trm_with_trigger_form b b' in
@@ -480,6 +492,8 @@ let rec trigger prf_st hpt =
       (trigger_axiom, apply_axiom, "Axiom");
       (trigger_or_elim, apply_or_elim, "OrElim");
       (trigger_and_intro, apply_and_intro, "AndIntro");
+      (trigger_brute_rename_hyp, apply_brute_rename, "BruteRenameHyp");
+      (trigger_brute_rename_goal, apply_brute_rename, "BruteRenameGoal");
     ]
   in
   let rec trigger' triggers =
@@ -488,8 +502,9 @@ let rec trigger prf_st hpt =
     | (option_trigger, tactic, message) :: triggers' -> (
         match interpret_trigger prf_st option_trigger with
         | Some l ->
-            if List.length l > 0 && Hashtbl.mem trigered_tactics l then
-              trigger' triggers'
+            if List.length l > 0 && Hashtbl.mem trigered_tactics l then (
+              print_string "Trigger already applied\n";
+              trigger' triggers')
             else (
               print_string @@ "Automaticaly applied " ^ message ^ "\n";
               Hashtbl.add trigered_tactics l tactic;
