@@ -19,4 +19,4 @@ propositional intuitionistic logic proof assistant:
 `./proplog` 
 
 ## Authors
-Louise Dubois de Prisque
+Alexis Carré, Louise Dubois de Prisque
