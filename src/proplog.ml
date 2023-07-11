@@ -1,62 +1,100 @@
 open Kernel
+open Either
 open Printer
 open Elaborator
 open Parser
 open Lexing
 open Lexer
 
-let proof_state : goal ref = ref []
+let display_intro () =
+  print_string
+    "Welcome to the PropLog proof assistant. Enter the sequent that you want \
+     to prove. \n\n\
+    \        It should have the form\n\
+    \        A1, ..., An |- B\n\n\
+    \        The Ais contain only propositional variables, parenthesis, \
+     arrows, T (as top),\n\
+    \        F (as bottom), conjunction and disjunction\n\n"
 
-let proof_tree = ref Hole
+and display_help () =
+  print_string
+    "\n\
+     Available rules:\n\
+     Auto, ModusPontens A, Axiom, Abstraction, AndIntro, AndElim A B, \
+     AndElimLeft A, AndElimRight A, OrIntrol, OrIntror, OrElim A B, TopIntro, \
+     TopElim, BottomElim, Commute, Assert A, Apply I in J\n\n"
 
-let proof_finished = ref false
+let rec get_goal () =
+  let s = read_line () in
+  let l = Lexing.from_string s in
+  try Parser.seq Lexer.token l
+  with _ ->
+    print_string "Error: the sequent is not well-formed.\n";
+    print_string "Please enter a new sequent.\n";
+    get_goal ()
 
-let _ = 
-        print_string "Welcome to the PropLog proof assistant. Enter the sequent that you want to prove. \n 
-        It should have the form
-        A1, ..., An |- B\n
-        The Ais contain only propositional variables, parenthesis, arrows, T (as top),
-        F (as bottom), conjunction and disjunction\n" ; 
-        let s = read_line () in 
-        let l = (Lexing.from_string s) in 
-        let s = Parser.seq Lexer.token l in
-        proof_state := s :: !proof_state ; (* goal_to_string !proof_state *)
-        while not (!proof_finished) do
-        print_string "What is the next step of your proof ?\n
-        You can :\n
-        - Apply an axiom rule by writing 'Axiom'\n
-        - Apply the modus ponens on a formula A by writing 'ModusPonens A'\n
-        - Apply the abstraction rule by writing 'Abstraction'\n
-        - Apply the and introduction rule by writing 'AndIntro'\n
-        - Apply the and elimination rule with the two conjuncts A and B by writing 'AndElim A B'\n
-        - Apply the or introduction left rule by writing 'OrIntrol'\n
-        - Apply the or introduction right rule by writing 'OrIntror'\n
-        - Apply the or elimination rule with the two disjuncts A and B by writing 'OrElim A B'\n
-        - Apply the bottom elimination rule by writing 'BottomElim'\n
-        - Apply the top introduction rule by writing 'TopIntro'\n
-        - Apply the top elimination rule by writing 'TopElim'\n" ;
-        let s1 = read_line () in
-        let l1 = (Lexing.from_string s1) in
-        let r = Parser.infrule Lexer.token l1 in
-        let _ =  match r with
-            | (None, Axiom) -> Elaborator.apply_axiom proof_state proof_tree
-            | (None, Abstraction) -> Elaborator.apply_abstraction proof_state proof_tree
-            | (Some f, ModusPonens) -> Elaborator.apply_modus_ponens proof_state f proof_tree
-            | (None, AndIntro) -> Elaborator.apply_and_intro proof_state proof_tree
-            | (Some f, AndElim) -> Elaborator.apply_and_elim proof_state f proof_tree
-            | (None, OrIntrol) -> Elaborator.apply_or_introl proof_state proof_tree
-            | (None, OrIntror) -> Elaborator.apply_or_intror proof_state proof_tree
-            | (Some f, OrElim) -> Elaborator.apply_or_elim proof_state f proof_tree
-            | (None, TopIntro) -> Elaborator.apply_top_intro proof_state proof_tree
-            | (None, TopElim) -> Elaborator.apply_top_elim proof_state proof_tree
-            | (None, BottomElim) -> Elaborator.apply_bottom_elim proof_state proof_tree
-            | _ -> failwith "error while applying a rule" 
-        in
-        let len = List.length !proof_state in 
-        Printf.printf "\nThere are %d remaining goals.\n" len ;
-        match !proof_state with
-            | [] -> proof_finished := true; 
-            print_string "Proof finished. Call to the kernel !" ; 
-            let ptree = hpt_to_pt !proof_tree in verif_proof_term ptree s; print_string ("\nQED.\n")
-            | x :: xs -> goal_to_string (x :: xs)
-        done
+and get_rule () =
+  let s = read_line () in
+  let l = Lexing.from_string s in
+  try Parser.rule Lexer.token l
+  with _ ->
+    print_string "Error: the rule is not well-formed.\n";
+    print_string "Please enter a new rule.\n";
+    get_rule ()
+
+and apply_rule rule args n state tree =
+  match rule with
+  | Auto -> Elaborator.apply_auto args n state tree
+  | Axiom -> Elaborator.apply_axiom args n state tree
+  | Abstraction -> Elaborator.apply_abstraction args n state tree
+  | ModusPonens -> Elaborator.apply_modus_ponens args n state tree
+  | AndIntro -> Elaborator.apply_and_intro args n state tree
+  | AndElim -> Elaborator.apply_and_elim args n state tree
+  | AndElimLeft -> Elaborator.apply_and_elim_left args n state tree
+  | AndElimRight -> Elaborator.apply_and_elim_right args n state tree
+  | OrIntrol -> Elaborator.apply_or_introl args n state tree
+  | OrIntror -> Elaborator.apply_or_intror args n state tree
+  | OrElim -> Elaborator.apply_or_elim args n state tree
+  | TopIntro -> Elaborator.apply_top_intro args n state tree
+  | TopElim -> Elaborator.apply_top_elim args n state tree
+  | BottomElim -> Elaborator.apply_bottom_elim args n state tree
+  | Commute -> Elaborator.apply_commute args n state tree
+  | Assert -> Elaborator.apply_assert args n state tree
+  | ApplyIn -> Elaborator.apply_apply_in args n state tree
+  | RenameInto -> Elaborator.apply_rename_into args n state tree
+
+let empty = function [] -> true | _ -> false
+
+let print_error s =
+  print_string "Error: ";
+  print_string s;
+  print_newline ();
+  print_string "The goals are left unchanged."
+
+let _ =
+  display_intro ();
+  let g = get_goal () in
+  let proof_state = ref [ g ] and proof_tree = ref Hole in
+  while not @@ empty !proof_state do
+    display_help ();
+    let n, (args, rule) = get_rule () in
+    (match apply_rule rule args n !proof_state !proof_tree with
+    | Left err -> print_error err
+    | Right (state, tree) ->
+        proof_state := state;
+        proof_tree := tree);
+    Printf.printf "There are %d remaining goals.\n" (List.length !proof_state);
+    goal_to_string !proof_state;
+    if not @@ empty !proof_state then (
+      print_string "Trying automatic triggers...\n";
+      (match Elaborator.trigger !proof_state !proof_tree with
+      | Left err -> print_error err
+      | Right (state, tree) ->
+          proof_state := state;
+          proof_tree := tree);
+      Printf.printf "There are %d remaining goals.\n" (List.length !proof_state);
+      goal_to_string !proof_state)
+  done;
+  print_string "Proof finished. Call to the kernel !";
+  verif_proof_term (hpt_to_pt !proof_tree) g;
+  print_string "\nQED.\n"
