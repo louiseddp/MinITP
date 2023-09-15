@@ -17,3 +17,4 @@ src/*.conflicts
 src/parser.ml
 src/lexer.ml
 src/*.mli
+proplog
